@@ -46,25 +46,34 @@ type Client struct {
 }
 
 func SetupEnvJson(ctx context.Context) error {
-	if os.Getenv("GCLOUD_JSON_AUTH") != "" {
-		exePath, err := os.Executable()
-		if err != nil {
-			return err
+	gcloudKeyFile := os.Getenv("DEVPOD_PROVIDER_GCLOUD_KEY_FILE")
+	if gcloudKeyFile != "" {
+		return os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", gcloudKeyFile)
+	} else {
+		gcloudKey := os.Getenv("DEVPOD_PROVIDER_GCLOUD_KEY")
+		if gcloudKey == "" {
+			gcloudKey = os.Getenv("GCLOUD_JSON_AUTH")
 		}
-		destination := filepath.Join(path.Dir(exePath), "gcloud_auth.json")
+		if gcloudKey != "" {
+			exePath, err := os.Executable()
+			if err != nil {
+				return err
+			}
+			destination := filepath.Join(path.Dir(exePath), "gcloud_auth.json")
 
-		f, err := os.OpenFile(destination, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
-		if err != nil {
-			return err
+			f, err := os.OpenFile(destination, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			_, err = f.WriteString(gcloudKey)
+			if err != nil {
+				return err
+			}
+
+			return os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", destination)
 		}
-		defer f.Close()
-
-		_, err = f.WriteString(os.Getenv("GCLOUD_JSON_AUTH"))
-		if err != nil {
-			return err
-		}
-
-		return os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", destination)
 	}
 
 	return nil
