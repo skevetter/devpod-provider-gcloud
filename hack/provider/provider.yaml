@@ -1,20 +1,19 @@
 name: gcloud
 version: ##VERSION##
-description: |-
-  DevPod on Google Cloud
+description: DevPod on Google Cloud
 icon: https://devpod.sh/assets/gcp.svg
 optionGroups:
   - options:
       - DISK_SIZE
       - DISK_IMAGE
       - MACHINE_TYPE
-    name: "GCloud options"
+    name: GCloud options
   - options:
       - AGENT_PATH
       - INACTIVITY_TIMEOUT
       - INJECT_DOCKER_CREDENTIALS
       - INJECT_GIT_CREDENTIALS
-    name: "Agent options"
+    name: Agent options
 options:
   PROJECT:
     description: The project id to use.
@@ -104,10 +103,10 @@ options:
     description: The subnetwork id to use.
   TAG:
     description: A tag to attach to the instance.
-    default: "devpod"
+    default: devpod
   DISK_SIZE:
     description: The disk size to use (GB).
-    default: "40"
+    default: 40
   DISK_IMAGE:
     description: The disk image to use.
     default: projects/cos-cloud/global/images/cos-101-17162-127-5
@@ -116,7 +115,7 @@ options:
     default: ""
   PUBLIC_IP_ENABLED:
     description: Use a public ip to access the instance
-    default: "true"
+    default: true
   MACHINE_TYPE:
     description: The machine type to use.
     default: c2-standard-4
@@ -144,11 +143,11 @@ options:
     description: If defined, will automatically stop the VM after the inactivity period.
     default: 5m
   INJECT_GIT_CREDENTIALS:
-    description: "If DevPod should inject git credentials into the remote host."
-    default: "true"
+    description: If DevPod should inject git credentials into the remote host.
+    default: true
   INJECT_DOCKER_CREDENTIALS:
-    description: "If DevPod should inject docker credentials into the remote host."
-    default: "true"
+    description: If DevPod should inject docker credentials into the remote host.
+    default: true
   AGENT_PATH:
     description: The path where to inject the DevPod agent to.
     default: /var/lib/toolbox/devpod
@@ -156,9 +155,8 @@ options:
     local: true
     hidden: true
     cache: 5m
-    description: "The Google Cloud auth token to use"
-    command: |-
-      ${GCLOUD_PROVIDER} token
+    description: The Google Cloud auth token to use
+    command: ${GCLOUD_PROVIDER} token
 agent:
   path: ${AGENT_PATH}
   inactivityTimeout: ${INACTIVITY_TIMEOUT}
@@ -175,8 +173,7 @@ agent:
         path: https://github.com/skevetter/devpod-provider-gcloud/releases/download/##VERSION##/devpod-provider-gcloud-linux-arm64
         checksum: ##CHECKSUM_LINUX_ARM64##
   exec:
-    shutdown: |-
-      ${GCLOUD_PROVIDER} stop --raw
+    shutdown: ${GCLOUD_PROVIDER} stop --raw
 binaries:
   GCLOUD_PROVIDER:
     - os: linux
