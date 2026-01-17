@@ -65,7 +65,7 @@ func SetupEnvJson(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			defer f.Close()
+			defer func() { _ = f.Close() }()
 
 			_, err = f.WriteString(gcloudKey)
 			if err != nil {
@@ -215,11 +215,12 @@ func (c *Client) Status(ctx context.Context, name string) (client.Status, error)
 	}
 
 	status := strings.TrimSpace(strings.ToUpper(*instance.Status))
-	if status == "RUNNING" {
+	switch status {
+	case "RUNNING":
 		return client.StatusRunning, nil
-	} else if status == "STOPPING" || status == "SUSPENDING" || status == "REPAIRING" || status == "PROVISIONING" || status == "STAGING" {
+	case "STOPPING", "SUSPENDING", "REPAIRING", "PROVISIONING", "STAGING":
 		return client.StatusBusy, nil
-	} else if status == "TERMINATED" {
+	case "TERMINATED":
 		return client.StatusStopped, nil
 	}
 

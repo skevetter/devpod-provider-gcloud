@@ -39,7 +39,7 @@ func (cmd *StatusCmd) Run(ctx context.Context, options *options.Options, log log
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	status, err := client.Status(ctx, options.MachineID)
 	if err != nil {

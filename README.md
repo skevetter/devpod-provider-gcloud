@@ -51,5 +51,3 @@ This provides has the following options:
 | SUBNETWORK     | false    | The subnetwork id to use.                                      |                                                      |
 | TAG            | false    | A tag to attach to the instance.                               | devpod                                               |
 | SERVICE_ACCOUNT| false    | A service account to attach to instance
-
-

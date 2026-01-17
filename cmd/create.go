@@ -13,8 +13,8 @@ import (
 	"github.com/skevetter/devpod-provider-gcloud/pkg/gcloud"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/options"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/ptr"
-	"github.com/skevetter/log"
 	"github.com/skevetter/devpod/pkg/ssh"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 
@@ -46,7 +46,7 @@ func (cmd *CreateCmd) Run(ctx context.Context, options *options.Options, log log
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	instance, err := buildInstance(options)
 	if err != nil {

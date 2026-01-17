@@ -50,7 +50,7 @@ func (cmd *StopCmd) Run(ctx context.Context, options *options.Options, log log.L
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	return client.Stop(ctx, options.MachineID, true)
 }
@@ -80,7 +80,7 @@ func rawStop(ctx context.Context, options *options.Options) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 400 {
 		out, err := io.ReadAll(resp.Body)
 		if err == nil {

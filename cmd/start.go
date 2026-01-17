@@ -37,7 +37,7 @@ func (cmd *StartCmd) Run(ctx context.Context, options *options.Options, log log.
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	return client.Start(ctx, options.MachineID)
 }
