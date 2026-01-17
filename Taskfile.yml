@@ -15,7 +15,16 @@ tasks:
   release:
     desc: Build binaries and generate provider.yaml with version from git tag
     cmds:
-      - goreleaser release --clean --skip=publish
+      - goreleaser release --snapshot --clean
+      - go run ./hack/provider/main.go {{ .VERSION }} > ./dist/provider.yaml
+    vars:
+      VERSION:
+        sh: git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0"
+
+  publish:
+    desc: Build and publish release (requires clean tag on current commit)
+    cmds:
+      - goreleaser release --clean
       - go run ./hack/provider/main.go {{ .VERSION }} > ./dist/provider.yaml
     vars:
       VERSION:
