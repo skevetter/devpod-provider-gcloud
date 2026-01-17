@@ -27,5 +27,5 @@ checksum:
   algorithm: sha256
 archives:
   - id: default
-    format: binary
+    formats: ["binary"]
     name_template: "{{ .Binary }}"
