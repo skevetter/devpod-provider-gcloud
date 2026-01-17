@@ -22,7 +22,7 @@ tasks:
         sh: git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0"
 
   publish:
-    desc: Build and publish release (requires clean tag on current commit)
+    desc: Build and publish release
     cmds:
       - goreleaser release --clean
       - go run ./hack/provider/main.go {{ .VERSION }} > ./dist/provider.yaml
