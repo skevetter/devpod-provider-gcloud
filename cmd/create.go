@@ -46,7 +46,7 @@ func (cmd *CreateCmd) Run(ctx context.Context, options *options.Options, log log
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	instance, err := buildInstance(options)
 	if err != nil {

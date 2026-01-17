@@ -57,7 +57,7 @@ func (cmd *CommandCmd) Run(ctx context.Context, options *options.Options, log lo
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// get instance
 	instance, err := client.Get(ctx, options.MachineID)
@@ -112,7 +112,7 @@ func (cmd *CommandCmd) Run(ctx context.Context, options *options.Options, log lo
 	if err != nil {
 		return errors.Wrap(err, "create ssh client")
 	}
-	defer sshClient.Close()
+	defer func() { _ = sshClient.Close() }()
 
 	// run command
 	return ssh.Run(ctx, sshClient, command, os.Stdin, os.Stdout, os.Stderr, nil)
@@ -123,7 +123,7 @@ func findAvailablePort() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer l.Close()
+	defer func() { _ = l.Close() }()
 
 	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port), nil
 }

@@ -80,7 +80,7 @@ func rawStop(ctx context.Context, options *options.Options) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 400 {
 		out, err := io.ReadAll(resp.Body)
 		if err == nil {
