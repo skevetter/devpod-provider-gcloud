@@ -50,7 +50,7 @@ func (cmd *StopCmd) Run(ctx context.Context, options *options.Options, log log.L
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	return client.Stop(ctx, options.MachineID, true)
 }
