@@ -13,8 +13,8 @@ import (
 	"github.com/skevetter/devpod-provider-gcloud/pkg/gcloud"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/options"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/ptr"
-	"github.com/skevetter/log"
 	"github.com/skevetter/devpod/pkg/ssh"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 

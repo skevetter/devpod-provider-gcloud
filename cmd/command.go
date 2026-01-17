@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/gcloud"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/options"
-	"github.com/skevetter/log"
 	"github.com/skevetter/devpod/pkg/ssh"
+	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 
