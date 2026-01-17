@@ -1,60 +1,72 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 )
 
-var checksumMap = map[string]string{
-	"./release/devpod-provider-gcloud-linux-amd64":       "##CHECKSUM_LINUX_AMD64##",
-	"./release/devpod-provider-gcloud-linux-arm64":       "##CHECKSUM_LINUX_ARM64##",
-	"./release/devpod-provider-gcloud-darwin-amd64":      "##CHECKSUM_DARWIN_AMD64##",
-	"./release/devpod-provider-gcloud-darwin-arm64":      "##CHECKSUM_DARWIN_ARM64##",
-	"./release/devpod-provider-gcloud-windows-amd64.exe": "##CHECKSUM_WINDOWS_AMD64##",
-}
+const provider = "gcloud"
 
-func main() {
+func run() error {
 	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "Expected version as argument")
-		os.Exit(1)
-		return
+		return fmt.Errorf("expected version as argument")
 	}
 
 	content, err := os.ReadFile("./hack/provider/provider.yaml")
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("read template: %w", err)
 	}
 
-	replaced := strings.Replace(string(content), "##VERSION##", os.Args[1], -1)
-	for k, v := range checksumMap {
-		checksum, err := File(k)
-		if err != nil {
-			panic(fmt.Errorf("generate checksum for %s: %v", k, err))
+	checksums, err := parseChecksums("./dist/checksums.txt")
+	if err != nil {
+		return fmt.Errorf("parse checksums: %w", err)
+	}
+
+	placeholders := map[string]string{
+		"##CHECKSUM_LINUX_AMD64##":   fmt.Sprintf("devpod-provider-%s-linux-amd64", provider),
+		"##CHECKSUM_LINUX_ARM64##":   fmt.Sprintf("devpod-provider-%s-linux-arm64", provider),
+		"##CHECKSUM_DARWIN_AMD64##":  fmt.Sprintf("devpod-provider-%s-darwin-amd64", provider),
+		"##CHECKSUM_DARWIN_ARM64##":  fmt.Sprintf("devpod-provider-%s-darwin-arm64", provider),
+		"##CHECKSUM_WINDOWS_AMD64##": fmt.Sprintf("devpod-provider-%s-windows-amd64.exe", provider),
+	}
+
+	result := strings.ReplaceAll(string(content), "##VERSION##", os.Args[1])
+	for placeholder, filename := range placeholders {
+		checksum, ok := checksums[filename]
+		if !ok {
+			return fmt.Errorf("checksum not found for %s", filename)
 		}
-
-		replaced = strings.Replace(replaced, v, checksum, -1)
+		result = strings.ReplaceAll(result, placeholder, checksum)
 	}
 
-	fmt.Print(replaced)
+	fmt.Print(result)
+	return nil
 }
 
-// File hashes a given file to a sha256 string
-func File(filePath string) (string, error) {
-	file, err := os.Open(filePath)
+func parseChecksums(path string) (map[string]string, error) {
+	file, err := os.Open(path)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer file.Close()
 
-	hash := sha256.New()
-	_, err = io.Copy(hash, file)
-	if err != nil {
-		return "", err
+	checksums := make(map[string]string)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		parts := strings.Fields(scanner.Text())
+		if len(parts) == 2 {
+			checksums[parts[1]] = parts[0]
+		}
 	}
 
-	return strings.ToLower(hex.EncodeToString(hash.Sum(nil))), nil
+	return checksums, scanner.Err()
+}
+
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 }
