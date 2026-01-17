@@ -1,0 +1,31 @@
+version: "3"
+
+tasks:
+  build:cli:
+    desc: Build the cli
+    cmds:
+      - goreleaser release --snapshot --clean
+
+  build:provider:
+    # usage: task build:provider -- 1.2.3"
+    desc: Build the provider.yaml
+    cmds:
+      - go run ./hack/provider/main.go {{ .CLI_ARGS }} > ./dist/provider.yaml
+
+  release:
+    desc: Build binaries and generate provider.yaml with version from git tag
+    cmds:
+      - goreleaser release --snapshot --clean
+      - go run ./hack/provider/main.go {{ .VERSION }} > ./dist/provider.yaml
+    vars:
+      VERSION:
+        sh: git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0"
+
+  publish:
+    desc: Build and publish release
+    cmds:
+      - goreleaser release --clean
+      - go run ./hack/provider/main.go {{ .VERSION }} > ./dist/provider.yaml
+    vars:
+      VERSION:
+        sh: git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0"
