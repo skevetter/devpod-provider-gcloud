@@ -91,7 +91,10 @@ func run() error {
 		return err
 	}
 
-	provider := buildProvider(cfg)
+	provider, err := buildProvider(cfg)
+	if err != nil {
+		return err
+	}
 
 	output, err := yaml.Marshal(provider)
 	if err != nil {
@@ -124,7 +127,15 @@ func newBuildConfig(version string) (*buildConfig, error) {
 	}, nil
 }
 
-func buildProvider(cfg *buildConfig) Provider {
+func buildProvider(cfg *buildConfig) (Provider, error) {
+	binaries, err := buildBinaries(cfg, allPlatforms())
+	if err != nil {
+		return Provider{}, err
+	}
+	agent, err := buildAgent(cfg)
+	if err != nil {
+		return Provider{}, err
+	}
 	return Provider{
 		Name:         providerName,
 		Version:      cfg.version,
@@ -132,8 +143,8 @@ func buildProvider(cfg *buildConfig) Provider {
 		Icon:         "https://devpod.sh/assets/gcp.svg",
 		OptionGroups: buildOptionGroups(),
 		Options:      buildOptions(),
-		Agent:        buildAgent(cfg),
-		Binaries:     buildBinaries(cfg, allPlatforms()),
+		Agent:        agent,
+		Binaries:     binaries,
 		Exec: map[string]string{
 			"init":    "${GCLOUD_PROVIDER} init",
 			"command": "${GCLOUD_PROVIDER} command",
@@ -143,7 +154,7 @@ func buildProvider(cfg *buildConfig) Provider {
 			"stop":    "${GCLOUD_PROVIDER} stop",
 			"status":  "${GCLOUD_PROVIDER} status",
 		},
-	}
+	}, nil
 }
 
 func buildOptionGroups() []OptionGroup {
@@ -266,65 +277,126 @@ fi`,
 	}
 }
 
-func buildAgent(cfg *buildConfig) Agent {
+func buildAgent(cfg *buildConfig) (Agent, error) {
+	linuxBins, err := buildBinaries(cfg, linuxPlatforms())
+	if err != nil {
+		return Agent{}, err
+	}
 	return Agent{
 		Path:                    "${AGENT_PATH}",
 		InactivityTimeout:       "${INACTIVITY_TIMEOUT}",
 		InjectGitCredentials:    "${INJECT_GIT_CREDENTIALS}",
 		InjectDockerCredentials: "${INJECT_DOCKER_CREDENTIALS}",
 		Binaries: map[string]any{
-			"GCLOUD_PROVIDER": buildBinaries(cfg, linuxPlatforms()).GCloudProvider,
+			"GCLOUD_PROVIDER": linuxBins.GCloudProvider,
 		},
 		Exec: map[string]any{
 			"shutdown": "${GCLOUD_PROVIDER} stop --raw",
 		},
+	}, nil
+}
+
+func buildBinaries(cfg *buildConfig, platforms []string) (Binaries, error) {
+	list, err := buildBinaryList(cfg, platforms)
+	if err != nil {
+		return Binaries{}, err
 	}
+	return Binaries{GCloudProvider: list}, nil
 }
 
-func buildBinaries(cfg *buildConfig, platforms []string) Binaries {
-	return Binaries{GCloudProvider: buildBinaryList(cfg, platforms)}
-}
-
-func buildBinaryList(cfg *buildConfig, platforms []string) []Binary {
+func buildBinaryList(cfg *buildConfig, platforms []string) ([]Binary, error) {
 	result := make([]Binary, 0, len(platforms))
 	for _, platform := range platforms {
-		result = append(result, buildBinary(cfg, platform))
+		binary, err := buildBinary(cfg, platform)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, binary)
 	}
-	return result
+	return result, nil
 }
 
-func buildBinary(cfg *buildConfig, platform string) Binary {
-	os, arch, _ := strings.Cut(platform, "/")
-
-	path := cfg.projectRoot
-	if !cfg.isRelease {
-		if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-			base, _ := url.Parse(path)
-			joined, _ := url.JoinPath(base.String(), buildDir(platform))
-			path = joined
-		} else {
-			absPath, _ := filepath.Abs(path)
-			path = filepath.Join(absPath, buildDir(platform))
-		}
+func buildBinary(cfg *buildConfig, platform string) (Binary, error) {
+	os, arch, ok := strings.Cut(platform, "/")
+	if !ok {
+		return Binary{}, fmt.Errorf("invalid platform %q", platform)
 	}
 
-	filename := fmt.Sprintf("devpod-provider-%s-%s-%s", providerName, os, arch)
-	if os == "windows" {
-		filename += ".exe"
+	path, err := buildBinaryPath(cfg, platform, os, arch)
+	if err != nil {
+		return Binary{}, err
 	}
 
-	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-		path, _ = url.JoinPath(path, filename)
-	} else {
-		path = filepath.Join(path, filename)
+	filename := buildFilename(os, arch)
+	checksum, ok := cfg.checksums[filename]
+	if !ok || checksum == "" {
+		return Binary{}, fmt.Errorf("missing checksum for %s", filename)
 	}
 
 	return Binary{
 		OS:       os,
 		Arch:     arch,
 		Path:     path,
-		Checksum: cfg.checksums[filename],
+		Checksum: checksum,
+	}, nil
+}
+
+func buildBinaryPath(cfg *buildConfig, platform, os, arch string) (string, error) {
+	dir := buildDir(platform)
+	if dir == "" {
+		return "", fmt.Errorf("unsupported platform %q", platform)
 	}
+
+	basePath, err := resolveBasePath(cfg, dir)
+	if err != nil {
+		return "", err
+	}
+
+	filename := buildFilename(os, arch)
+	return joinPath(basePath, filename)
+}
+
+func resolveBasePath(cfg *buildConfig, dir string) (string, error) {
+	if cfg.isRelease {
+		return cfg.projectRoot, nil
+	}
+
+	if strings.HasPrefix(cfg.projectRoot, "http://") || strings.HasPrefix(cfg.projectRoot, "https://") {
+		return joinURLPath(cfg.projectRoot, dir)
+	}
+
+	absPath, err := filepath.Abs(cfg.projectRoot)
+	if err != nil {
+		return "", fmt.Errorf("abs PROJECT_ROOT: %w", err)
+	}
+	return filepath.Join(absPath, dir), nil
+}
+
+func joinPath(basePath, filename string) (string, error) {
+	if strings.HasPrefix(basePath, "http://") || strings.HasPrefix(basePath, "https://") {
+		return joinURLPath(basePath, filename)
+	}
+	return filepath.Join(basePath, filename), nil
+}
+
+func joinURLPath(base, elem string) (string, error) {
+	parsed, err := url.Parse(base)
+	if err != nil {
+		return "", fmt.Errorf("parse URL: %w", err)
+	}
+	joined, err := url.JoinPath(parsed.String(), elem)
+	if err != nil {
+		return "", fmt.Errorf("join URL path: %w", err)
+	}
+	return joined, nil
+}
+
+func buildFilename(os, arch string) string {
+	filename := fmt.Sprintf("devpod-provider-%s-%s-%s", providerName, os, arch)
+	if os == "windows" {
+		filename += ".exe"
+	}
+	return filename
 }
 
 func buildDir(platform string) string {
