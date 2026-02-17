@@ -8,7 +8,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.16.0
 	github.com/pkg/errors v0.9.1
 	github.com/skevetter/devpod v0.8.12
-	github.com/skevetter/log v0.0.0-20251225081445-b5dfd11ce781
+	github.com/skevetter/log v0.0.0-20260106023547-bfd26ab1367c
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/crypto v0.46.0
 	golang.org/x/oauth2 v0.34.0
