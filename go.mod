@@ -11,7 +11,7 @@ require (
 	github.com/skevetter/log v0.0.0-20260106023547-bfd26ab1367c
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/crypto v0.48.0
-	golang.org/x/oauth2 v0.34.0
+	golang.org/x/oauth2 v0.35.0
 	google.golang.org/api v0.264.0
 )
 
