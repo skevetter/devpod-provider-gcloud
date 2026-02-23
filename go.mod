@@ -12,7 +12,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/crypto v0.48.0
 	golang.org/x/oauth2 v0.35.0
-	google.golang.org/api v0.267.0
+	google.golang.org/api v0.268.0
 )
 
 require (
