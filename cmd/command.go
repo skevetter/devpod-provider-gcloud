@@ -27,12 +27,12 @@ func NewCommandCmd() *cobra.Command {
 		Use:   "command",
 		Short: "Run a command on the instance",
 		RunE: func(_ *cobra.Command, args []string) error {
-			options, err := options.FromEnv(true, true)
+			optionsFromEnv, err := options.FromEnv(true, true)
 			if err != nil {
 				return err
 			}
 
-			return cmd.Run(context.Background(), options, log.Default)
+			return cmd.Run(context.Background(), optionsFromEnv, log.Default)
 		},
 	}
 
@@ -115,7 +115,15 @@ func (cmd *CommandCmd) Run(ctx context.Context, options *options.Options, log lo
 	defer func() { _ = sshClient.Close() }()
 
 	// run command
-	return ssh.Run(ctx, sshClient, command, os.Stdin, os.Stdout, os.Stderr, nil)
+	return ssh.Run(ssh.RunOptions{
+		Context: ctx,
+		Client:  sshClient,
+		Command: command,
+		Stdin:   os.Stdin,
+		Stdout:  os.Stdout,
+		Stderr:  os.Stderr,
+		EnvVars: nil,
+	})
 }
 
 func findAvailablePort() (string, error) {
