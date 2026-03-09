@@ -11,15 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StatusCmd holds the cmd flags
-type StatusCmd struct{}
+// DescribeCmd holds the cmd flags
+type DescribeCmd struct{}
 
-// NewStatusCmd defines a command
-func NewStatusCmd() *cobra.Command {
-	cmd := &StatusCmd{}
-	statusCmd := &cobra.Command{
-		Use:   "status",
-		Short: "Retrieve the status of an instance",
+// NewDescribeCmd defines a command
+func NewDescribeCmd() *cobra.Command {
+	cmd := &DescribeCmd{}
+	describeCmd := &cobra.Command{
+		Use:   "describe",
+		Short: "Retrieve description of the virtual machine",
 		RunE: func(_ *cobra.Command, args []string) error {
 			optionsFromEnv, err := options.FromEnv(true, true)
 			if err != nil {
@@ -30,22 +30,22 @@ func NewStatusCmd() *cobra.Command {
 		},
 	}
 
-	return statusCmd
+	return describeCmd
 }
 
 // Run runs the command logic
-func (cmd *StatusCmd) Run(ctx context.Context, options *options.Options, log log.Logger) error {
+func (cmd *DescribeCmd) Run(ctx context.Context, options *options.Options, log log.Logger) error {
 	client, err := gcloud.NewClient(ctx, options.Project, options.Zone)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = client.Close() }()
 
-	status, err := client.Status(ctx, options.MachineID)
+	json, err := client.Describe(ctx, options.MachineID)
 	if err != nil {
 		return err
 	}
 
-	_, err = fmt.Fprint(os.Stdout, status)
+	_, err = fmt.Fprint(os.Stdout, json)
 	return err
 }

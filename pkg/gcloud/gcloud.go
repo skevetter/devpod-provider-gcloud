@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
-	computepb "cloud.google.com/go/compute/apiv1/computepb"
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/googleapis/gax-go/v2/apierror"
 	"github.com/skevetter/devpod/pkg/client"
 	"golang.org/x/oauth2"
@@ -208,10 +208,8 @@ func (c *Client) Get(ctx context.Context, name string) (*computepb.Instance, err
 
 func (c *Client) Status(ctx context.Context, name string) (client.Status, error) {
 	instance, err := c.Get(ctx, name)
-	if err != nil {
+	if err != nil || instance == nil {
 		return client.StatusNotFound, err
-	} else if instance == nil {
-		return client.StatusNotFound, nil
 	}
 
 	status := strings.TrimSpace(strings.ToUpper(*instance.Status))
@@ -225,6 +223,19 @@ func (c *Client) Status(ctx context.Context, name string) (client.Status, error)
 	}
 
 	return client.StatusNotFound, fmt.Errorf("unexpected status: %v", status)
+}
+
+func (c *Client) Describe(ctx context.Context, name string) (string, error) {
+	instance, err := c.Get(ctx, name)
+	if err != nil || instance == nil {
+		return "{}", err
+	}
+
+	bytes, err := json.MarshalIndent(instance, "", "  ")
+	if err != nil {
+		return "{}", nil
+	}
+	return string(bytes), nil
 }
 
 func (c *Client) Close() error {

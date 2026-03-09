@@ -61,5 +61,6 @@ func BuildRoot() *cobra.Command {
 	rootCmd.AddCommand(NewCommandCmd())
 	rootCmd.AddCommand(NewTokenCmd())
 	rootCmd.AddCommand(NewInitCmd())
+	rootCmd.AddCommand(NewDescribeCmd())
 	return rootCmd
 }

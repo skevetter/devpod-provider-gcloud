@@ -146,13 +146,14 @@ func buildProvider(cfg *buildConfig) (Provider, error) {
 		Agent:        agent,
 		Binaries:     binaries,
 		Exec: map[string]string{
-			"init":    "${GCLOUD_PROVIDER} init",
-			"command": "${GCLOUD_PROVIDER} command",
-			"create":  "${GCLOUD_PROVIDER} create",
-			"delete":  "${GCLOUD_PROVIDER} delete",
-			"start":   "${GCLOUD_PROVIDER} start",
-			"stop":    "${GCLOUD_PROVIDER} stop",
-			"status":  "${GCLOUD_PROVIDER} status",
+			"init":     "${GCLOUD_PROVIDER} init",
+			"command":  "${GCLOUD_PROVIDER} command",
+			"create":   "${GCLOUD_PROVIDER} create",
+			"delete":   "${GCLOUD_PROVIDER} delete",
+			"start":    "${GCLOUD_PROVIDER} start",
+			"stop":     "${GCLOUD_PROVIDER} stop",
+			"status":   "${GCLOUD_PROVIDER} status",
+			"describe": "${GCLOUD_PROVIDER} describe",
 		},
 	}, nil
 }
