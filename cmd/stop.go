@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/gcloud"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/options"
-	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 
@@ -26,13 +25,13 @@ func NewStopCmd() *cobra.Command {
 	stopCmd := &cobra.Command{
 		Use:   "stop",
 		Short: "Stop an instance",
-		RunE: func(_ *cobra.Command, args []string) error {
-			options, err := options.FromEnv(true, false)
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			optionsFromEnv, err := options.FromEnv(true, false)
 			if err != nil {
 				return err
 			}
 
-			return cmd.Run(context.Background(), options, log.Default)
+			return cmd.Run(cobraCmd.Context(), optionsFromEnv)
 		},
 	}
 
@@ -41,7 +40,7 @@ func NewStopCmd() *cobra.Command {
 }
 
 // Run runs the command logic
-func (cmd *StopCmd) Run(ctx context.Context, options *options.Options, log log.Logger) error {
+func (cmd *StopCmd) Run(ctx context.Context, options *options.Options) error {
 	if cmd.Raw {
 		return rawStop(ctx, options)
 	}

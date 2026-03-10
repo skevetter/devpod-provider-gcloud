@@ -14,15 +14,13 @@ type TokenCmd struct{}
 // NewTokenCmd defines a command
 func NewTokenCmd() *cobra.Command {
 	cmd := &TokenCmd{}
-	tokenCmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "token",
 		Short: "Prints an access token",
-		RunE: func(_ *cobra.Command, args []string) error {
-			return cmd.Run(context.Background())
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			return cmd.Run(cobraCmd.Context())
 		},
 	}
-
-	return tokenCmd
 }
 
 // Run runs the command logic

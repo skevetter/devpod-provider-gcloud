@@ -13,7 +13,6 @@ import (
 	"github.com/skevetter/devpod-provider-gcloud/pkg/gcloud"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/options"
 	"github.com/skevetter/devpod/pkg/ssh"
-	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 
@@ -23,24 +22,22 @@ type CommandCmd struct{}
 // NewCommandCmd defines a command
 func NewCommandCmd() *cobra.Command {
 	cmd := &CommandCmd{}
-	commandCmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "command",
 		Short: "Run a command on the instance",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			optionsFromEnv, err := options.FromEnv(true, true)
 			if err != nil {
 				return err
 			}
 
-			return cmd.Run(context.Background(), optionsFromEnv, log.Default)
+			return cmd.Run(cobraCmd.Context(), optionsFromEnv)
 		},
 	}
-
-	return commandCmd
 }
 
 // Run runs the command logic
-func (cmd *CommandCmd) Run(ctx context.Context, options *options.Options, log log.Logger) error {
+func (cmd *CommandCmd) Run(ctx context.Context, options *options.Options) error {
 	command := os.Getenv("COMMAND")
 	if command == "" {
 		return fmt.Errorf("command environment variable is missing")
@@ -115,8 +112,7 @@ func (cmd *CommandCmd) Run(ctx context.Context, options *options.Options, log lo
 	defer func() { _ = sshClient.Close() }()
 
 	// run command
-	return ssh.Run(ssh.RunOptions{
-		Context: ctx,
+	return ssh.Run(ctx, ssh.RunOptions{
 		Client:  sshClient,
 		Command: command,
 		Stdin:   os.Stdin,

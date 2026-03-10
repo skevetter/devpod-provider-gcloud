@@ -206,7 +206,7 @@ func (c *Client) Get(ctx context.Context, name string) (*computepb.Instance, err
 	return instance, nil
 }
 
-func (c *Client) Status(ctx context.Context, name string) (client.Status, error) {
+func (c *Client) Status(ctx context.Context, name string) (string, error) {
 	instance, err := c.Get(ctx, name)
 	if err != nil || instance == nil {
 		return client.StatusNotFound, err
@@ -228,21 +228,16 @@ func (c *Client) Status(ctx context.Context, name string) (client.Status, error)
 func (c *Client) Describe(ctx context.Context, name string) (string, error) {
 	instance, err := c.Get(ctx, name)
 	if err != nil || instance == nil {
-		return "{}", err
+		return client.DescriptionNotFound, err
 	}
 
 	bytes, err := json.MarshalIndent(instance, "", "  ")
 	if err != nil {
-		return "{}", nil
+		return client.DescriptionNotFound, nil
 	}
 	return string(bytes), nil
 }
 
 func (c *Client) Close() error {
-	err := c.InstanceClient.Close()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.InstanceClient.Close()
 }

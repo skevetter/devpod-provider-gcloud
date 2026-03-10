@@ -14,7 +14,6 @@ import (
 	"github.com/skevetter/devpod-provider-gcloud/pkg/options"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/ptr"
 	"github.com/skevetter/devpod/pkg/ssh"
-	"github.com/skevetter/log"
 	"github.com/spf13/cobra"
 )
 
@@ -24,24 +23,22 @@ type CreateCmd struct{}
 // NewCreateCmd defines a command
 func NewCreateCmd() *cobra.Command {
 	cmd := &CreateCmd{}
-	createCmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "create",
 		Short: "Create an instance",
-		RunE: func(_ *cobra.Command, args []string) error {
-			options, err := options.FromEnv(true, true)
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			optionsFromEnv, err := options.FromEnv(true, true)
 			if err != nil {
 				return err
 			}
 
-			return cmd.Run(context.Background(), options, log.Default)
+			return cmd.Run(cobraCmd.Context(), optionsFromEnv)
 		},
 	}
-
-	return createCmd
 }
 
 // Run runs the command logic
-func (cmd *CreateCmd) Run(ctx context.Context, options *options.Options, log log.Logger) error {
+func (cmd *CreateCmd) Run(ctx context.Context, options *options.Options) error {
 	client, err := gcloud.NewClient(ctx, options.Project, options.Zone)
 	if err != nil {
 		return err
