@@ -339,6 +339,8 @@ github.com/skevetter/devpod v0.16.1 h1:hXVaI7yi/Ecpx6hKewU+DgQqP5828vMCJAzml9s2o
 github.com/skevetter/devpod v0.16.1/go.mod h1:4DnJuhaFx5JozFpCDwItKo2tHIIqux72FYfqJyknYcc=
 github.com/skevetter/devpod v0.16.2 h1:a5lZHciq3F9fqxEBfokMs4qoQdX4WeoOXlw5Dl5xnf0=
 github.com/skevetter/devpod v0.16.2/go.mod h1:UfStAsPjAodSiqWSWOE1B67rkWd+BJPe7EmKVFwyyVQ=
+github.com/skevetter/devpod v0.16.3 h1:uZYjX6INPCB0WpPgp6QRjgpsnowIXvImZae0S1C+6EQ=
+github.com/skevetter/devpod v0.16.3/go.mod h1:UfStAsPjAodSiqWSWOE1B67rkWd+BJPe7EmKVFwyyVQ=
 github.com/skevetter/log v0.0.0-20251225081445-b5dfd11ce781 h1:TgxwN+W2c19aqSUvYGgJo6Sou+NKEzWfvHk54XR0SvY=
 github.com/skevetter/log v0.0.0-20251225081445-b5dfd11ce781/go.mod h1:Aqjwx8xRSxBWtTYXK3EzxManSgYZl7FaSh8J5LvTAK0=
 github.com/skevetter/log v0.0.0-20260106023547-bfd26ab1367c h1:2IjLo9V6TLV2rORRKKu+NVMSrOAEeuS4KJPk3v9e1rs=
