@@ -73,7 +73,7 @@ func writeKeyFile(gcloudKey string) error {
 	}
 	destination := filepath.Join(filepath.Dir(exePath), "gcloud_auth.json")
 
-	if err := os.WriteFile(destination, []byte(gcloudKey), 0o600); err != nil {
+	if err := os.WriteFile(destination, []byte(gcloudKey), 0o600); err != nil { // #nosec G703
 		return err
 	}
 

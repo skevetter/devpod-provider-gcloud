@@ -91,7 +91,11 @@ func rawStop(ctx context.Context, options *options.Options) error {
 	if resp.StatusCode >= 400 {
 		out, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("error stopping vm: status %d: failed to read body: %w", resp.StatusCode, err)
+			return fmt.Errorf(
+				"error stopping vm: status %d: failed to read body: %w",
+				resp.StatusCode,
+				err,
+			)
 		}
 
 		return fmt.Errorf("error stopping vm: status %d: %s", resp.StatusCode, string(out))

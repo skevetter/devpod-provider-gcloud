@@ -217,10 +217,14 @@ func normalizeSubnetworkID(options *options.Options) *string {
 		return ptr.Ptr(fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", project, region, sn))
 	case 2:
 		// {{region}}/{{name}}
-		return ptr.Ptr(fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", project, parts[0], parts[1]))
+		return ptr.Ptr(
+			fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", project, parts[0], parts[1]),
+		)
 	case 3:
 		// {{project}}/{{region}}/{{name}}
-		return ptr.Ptr(fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", parts[0], parts[1], parts[2]))
+		return ptr.Ptr(
+			fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", parts[0], parts[1], parts[2]),
+		)
 	default:
 		// projects/{{project}}/regions/{{region}}/subnetworks/{{name}} or other full path
 		return ptr.Ptr(sn)
