@@ -35,7 +35,8 @@ func NewStopCmd() *cobra.Command {
 		},
 	}
 
-	stopCmd.Flags().BoolVar(&cmd.Raw, "raw", false, "If enabled will sent a raw request instead of using the SDK")
+	stopCmd.Flags().
+		BoolVar(&cmd.Raw, "raw", false, "If enabled will sent a raw request instead of using the SDK")
 	return stopCmd
 }
 
@@ -65,7 +66,17 @@ func rawStop(ctx context.Context, options *options.Options) error {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("https://compute.googleapis.com/compute/v1/projects/%s/zones/%s/instances/%s/stop", options.Project, options.Zone, options.MachineID), nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		"POST",
+		fmt.Sprintf(
+			"https://compute.googleapis.com/compute/v1/projects/%s/zones/%s/instances/%s/stop",
+			options.Project,
+			options.Zone,
+			options.MachineID,
+		),
+		nil,
+	)
 	if err != nil {
 		return err
 	}

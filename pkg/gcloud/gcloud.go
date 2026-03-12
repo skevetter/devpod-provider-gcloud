@@ -20,7 +20,18 @@ import (
 	"google.golang.org/api/option"
 )
 
-func NewClient(ctx context.Context, project, zone string, opts ...option.ClientOption) (*Client, error) {
+type Client struct {
+	InstanceClient *compute.InstancesClient
+
+	Project string
+	Zone    string
+}
+
+func NewClient(
+	ctx context.Context,
+	project, zone string,
+	opts ...option.ClientOption,
+) (*Client, error) {
 	err := SetupEnvJson(ctx)
 	if err != nil {
 		return nil, err
@@ -36,13 +47,6 @@ func NewClient(ctx context.Context, project, zone string, opts ...option.ClientO
 		Project:        project,
 		Zone:           zone,
 	}, nil
-}
-
-type Client struct {
-	InstanceClient *compute.InstancesClient
-
-	Project string
-	Zone    string
 }
 
 func SetupEnvJson(ctx context.Context) error {

@@ -95,15 +95,28 @@ func buildInstance(options *options.Options) (*computepb.Instance, error) {
 				},
 			},
 		},
-		MachineType: ptr.Ptr(fmt.Sprintf("projects/%s/zones/%s/machineTypes/%s", options.Project, options.Zone, options.MachineType)),
+		MachineType: ptr.Ptr(
+			fmt.Sprintf(
+				"projects/%s/zones/%s/machineTypes/%s",
+				options.Project,
+				options.Zone,
+				options.MachineType,
+			),
+		),
 		Disks: []*computepb.AttachedDisk{
 			{
 				AutoDelete: ptr.Ptr(true),
 				Boot:       ptr.Ptr(true),
 				DeviceName: ptr.Ptr(options.MachineID),
 				InitializeParams: &computepb.AttachedDiskInitializeParams{
-					DiskSizeGb:  ptr.Ptr(int64(diskSize)),
-					DiskType:    ptr.Ptr(fmt.Sprintf("projects/%s/zones/%s/diskTypes/pd-balanced", options.Project, options.Zone)),
+					DiskSizeGb: ptr.Ptr(int64(diskSize)),
+					DiskType: ptr.Ptr(
+						fmt.Sprintf(
+							"projects/%s/zones/%s/diskTypes/pd-balanced",
+							options.Project,
+							options.Zone,
+						),
+					),
 					SourceImage: ptr.Ptr(options.DiskImage),
 				},
 			},
@@ -116,7 +129,9 @@ func buildInstance(options *options.Options) (*computepb.Instance, error) {
 				AccessConfigs: getAccessConfig(options),
 			},
 		},
-		Zone:            ptr.Ptr(fmt.Sprintf("projects/%s/zones/%s", options.Project, options.Zone)),
+		Zone: ptr.Ptr(
+			fmt.Sprintf("projects/%s/zones/%s", options.Project, options.Zone),
+		),
 		Name:            ptr.Ptr(options.MachineID),
 		ServiceAccounts: serviceAccounts,
 	}

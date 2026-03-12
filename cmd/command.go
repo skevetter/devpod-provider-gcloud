@@ -65,7 +65,10 @@ func (cmd *CommandCmd) Run(ctx context.Context, options *options.Options) error 
 	}
 
 	// get external ip
-	if options.PublicIP && (len(instance.NetworkInterfaces) == 0 || len(instance.NetworkInterfaces[0].AccessConfigs) == 0 || instance.NetworkInterfaces[0].AccessConfigs[0].NatIP == nil) {
+	noExternalIP := len(instance.NetworkInterfaces) == 0 ||
+		len(instance.NetworkInterfaces[0].AccessConfigs) == 0 ||
+		instance.NetworkInterfaces[0].AccessConfigs[0].NatIP == nil
+	if options.PublicIP && noExternalIP {
 		return fmt.Errorf("instance %s doesn't have an external nat ip", options.MachineID)
 	}
 
