@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/gcloud"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/options"
 	"github.com/spf13/cobra"
@@ -81,7 +81,7 @@ func rawStop(ctx context.Context, options *options.Options) error {
 	}
 	req.Header.Set("Authorization", "Bearer "+tok.AccessToken)
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -90,11 +90,11 @@ func rawStop(ctx context.Context, options *options.Options) error {
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 400 {
 		out, err := io.ReadAll(resp.Body)
-		if err == nil {
-			return errors.Wrapf(err, "Error stopping vm: %s", string(out))
+		if err != nil {
+			return err
 		}
 
-		return err
+		return fmt.Errorf("error stopping vm: %s", string(out))
 	}
 
 	return nil

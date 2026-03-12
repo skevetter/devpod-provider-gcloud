@@ -2,16 +2,17 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
+	"syscall"
 	"time"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/gcloud"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/options"
 	"github.com/skevetter/devpod/pkg/ssh"
@@ -71,7 +72,7 @@ func (cmd *CommandCmd) Run(ctx context.Context, options *options.Options) error 
 
 	sshClient, err := ssh.NewSSHClient("devpod", t.host+":"+t.port, privateKey)
 	if err != nil {
-		return errors.Wrap(err, "create ssh client")
+		return fmt.Errorf("create ssh client: %w", err)
 	}
 	defer func() { _ = sshClient.Close() }()
 
@@ -126,7 +127,7 @@ func resolvePublicTarget(
 	if noExternalIP {
 		return sshTarget{}, fmt.Errorf(
 			"instance %s doesn't have an external nat ip",
-			*instance.Name,
+			instance.GetName(),
 		)
 	}
 
@@ -139,17 +140,21 @@ func resolvePublicTarget(
 func resolveIAPTarget(
 	ctx context.Context, instance *computepb.Instance,
 ) (sshTarget, error) {
+	if instance.GetName() == "" || instance.GetZone() == "" {
+		return sshTarget{}, fmt.Errorf("instance missing name or zone")
+	}
+
 	port, err := findAvailablePort()
 	if err != nil {
 		return sshTarget{}, err
 	}
 
-	zoneName := path.Base(*instance.Zone)
+	zoneName := path.Base(instance.GetZone())
 
 	gcloudCmd := exec.CommandContext( //nolint:gosec // args from trusted provider config
 		ctx, "gcloud",
 		"compute", "start-iap-tunnel",
-		*instance.Name, "22",
+		instance.GetName(), "22",
 		"--local-host-port=localhost:"+port,
 		"--zone="+zoneName,
 	)
@@ -191,7 +196,10 @@ func waitForPort(ctx context.Context, port string) error {
 		default:
 			l, err := net.Listen("tcp", "localhost:"+port)
 			if err != nil {
-				return nil
+				if errors.Is(err, syscall.EADDRINUSE) {
+					return nil
+				}
+				return err
 			}
 			_ = l.Close()
 			time.Sleep(1 * time.Second)

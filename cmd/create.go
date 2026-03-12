@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
-	"github.com/pkg/errors"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/gcloud"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/options"
 	"github.com/skevetter/devpod-provider-gcloud/pkg/ptr"
@@ -56,7 +55,7 @@ func (cmd *CreateCmd) Run(ctx context.Context, options *options.Options) error {
 func buildInstance(options *options.Options) (*computepb.Instance, error) {
 	diskSize, err := strconv.Atoi(options.DiskSize)
 	if err != nil {
-		return nil, errors.Wrap(err, "parse disk size")
+		return nil, fmt.Errorf("parse disk size: %w", err)
 	}
 
 	publicKey, err := loadPublicKey(options.MachineFolder)
@@ -84,7 +83,7 @@ func buildInstance(options *options.Options) (*computepb.Instance, error) {
 func loadPublicKey(machineFolder string) (string, error) {
 	publicKeyBase, err := ssh.GetPublicKeyBase(machineFolder)
 	if err != nil {
-		return "", errors.Wrap(err, "generate public key")
+		return "", fmt.Errorf("generate public key: %w", err)
 	}
 
 	decoded, err := base64.StdEncoding.DecodeString(publicKeyBase)
