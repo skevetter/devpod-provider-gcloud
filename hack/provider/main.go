@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"maps"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -101,8 +102,8 @@ func run() error {
 		return fmt.Errorf("marshal yaml: %w", err)
 	}
 
-	fmt.Print(string(output))
-	return nil
+	_, err = os.Stdout.Write(output)
+	return err
 }
 
 func newBuildConfig(version string) (*buildConfig, error) {
@@ -192,6 +193,21 @@ func buildOptionGroups() []OptionGroup {
 }
 
 func buildOptions() Options {
+	opts := Options{}
+	maps.Copy(opts, buildCoreOptions())
+	maps.Copy(opts, buildInstanceOptions())
+	maps.Copy(opts, buildAgentOptions())
+	opts["GCLOUD_PROVIDER_TOKEN"] = Option{ //nolint:gosec // not actual credentials
+		Local:       true,
+		Hidden:      true,
+		Cache:       "5m",
+		Description: "The Google Cloud auth token to use.",
+		Command:     "${GCLOUD_PROVIDER} token",
+	}
+	return opts
+}
+
+func buildCoreOptions() Options {
 	return Options{
 		"PROJECT": {
 			Description: "The project id to use.",
@@ -199,84 +215,97 @@ func buildOptions() Options {
 			Command:     `gcloud config list --quiet --verbosity=error --format "value(core.project)" 2>/dev/null || true`,
 		},
 		"ZONE": {
-			Description: "The google cloud zone to create the VM in. E.g. europe-west1-d",
+			Description: "The google cloud zone to create the VM in. E.g. europe-west1-d.",
 			Required:    true,
-			Command: `GCLOUD_ZONE=$(gcloud config list --quiet --verbosity=error --format "value(compute.zone)" 2>/dev/null || true)
+			Command:     zoneCommand(),
+			Suggestions: defaultZones,
+		},
+	}
+}
+
+func zoneCommand() string {
+	return `GCLOUD_ZONE=$(gcloud config list --quiet --verbosity=error` +
+		` --format "value(compute.zone)" 2>/dev/null || true)
 if [ -z "$GCLOUD_ZONE" ]; then
   echo "europe-west2-b"
 else
   echo $GCLOUD_ZONE
-fi`,
-			Suggestions: []string{
-				"asia-east1-a",
-				"asia-east1-b",
-				"asia-east1-c",
-				"asia-east2-a",
-				"asia-east2-b",
-				"asia-east2-c",
-				"asia-northeast1-a",
-				"asia-northeast1-c",
-				"asia-northeast2-b",
-				"asia-northeast3-b",
-				"asia-south1-a",
-				"asia-south1-b",
-				"asia-southeast1-a",
-				"europe-north1-a",
-				"europe-north1-b",
-				"europe-north1-c",
-				"europe-west1-b",
-				"europe-west1-c",
-				"europe-west1-d",
-				"europe-west2-a",
-				"europe-west2-b",
-				"europe-west2-c",
-				"europe-west3-a",
-				"europe-west3-b",
-				"europe-west3-c",
-				"europe-west4-a",
-				"europe-west4-b",
-				"europe-west4-c",
-				"europe-west9-a",
-				"europe-west9-b",
-				"europe-west9-c",
-				"me-central1-a",
-				"me-central1-b",
-				"me-central1-c",
-				"me-west1-a",
-				"me-west1-b",
-				"me-west1-c",
-				"northamerica-northeast1-a",
-				"northamerica-northeast1-b",
-				"northamerica-northeast1-c",
-				"southamerica-east1-a",
-				"southamerica-east1-b",
-				"southamerica-east1-c",
-				"southamerica-west1-a",
-				"southamerica-west1-b",
-				"southamerica-west1-c",
-				"us-central1-a",
-				"us-central1-b",
-				"us-central1-f",
-				"us-east1-b",
-				"us-east1-c",
-				"us-east1-d",
-				"us-east4-a",
-				"us-east4-b",
-				"us-east4-c",
-				"us-south1-a",
-				"us-south1-b",
-				"us-south1-c",
-				"us-west1-a",
-				"us-west1-b",
-				"us-west1-c",
-				"us-west2-a",
-				"us-west2-b",
-				"us-west2-c",
-				"us-west4-a",
-				"us-west4-b",
-				"us-west4-c",
-			},
-		},
+fi`
+}
+
+//nolint:gochecknoglobals // static configuration data
+var defaultZones = []string{
+	"asia-east1-a",
+	"asia-east1-b",
+	"asia-east1-c",
+	"asia-east2-a",
+	"asia-east2-b",
+	"asia-east2-c",
+	"asia-northeast1-a",
+	"asia-northeast1-c",
+	"asia-northeast2-b",
+	"asia-northeast3-b",
+	"asia-south1-a",
+	"asia-south1-b",
+	"asia-southeast1-a",
+	"europe-north1-a",
+	"europe-north1-b",
+	"europe-north1-c",
+	"europe-west1-b",
+	"europe-west1-c",
+	"europe-west1-d",
+	"europe-west2-a",
+	"europe-west2-b",
+	"europe-west2-c",
+	"europe-west3-a",
+	"europe-west3-b",
+	"europe-west3-c",
+	"europe-west4-a",
+	"europe-west4-b",
+	"europe-west4-c",
+	"europe-west9-a",
+	"europe-west9-b",
+	"europe-west9-c",
+	"me-central1-a",
+	"me-central1-b",
+	"me-central1-c",
+	"me-west1-a",
+	"me-west1-b",
+	"me-west1-c",
+	"northamerica-northeast1-a",
+	"northamerica-northeast1-b",
+	"northamerica-northeast1-c",
+	"southamerica-east1-a",
+	"southamerica-east1-b",
+	"southamerica-east1-c",
+	"southamerica-west1-a",
+	"southamerica-west1-b",
+	"southamerica-west1-c",
+	"us-central1-a",
+	"us-central1-b",
+	"us-central1-f",
+	"us-east1-b",
+	"us-east1-c",
+	"us-east1-d",
+	"us-east4-a",
+	"us-east4-b",
+	"us-east4-c",
+	"us-south1-a",
+	"us-south1-b",
+	"us-south1-c",
+	"us-west1-a",
+	"us-west1-b",
+	"us-west1-c",
+	"us-west2-a",
+	"us-west2-b",
+	"us-west2-c",
+	"us-west4-a",
+	"us-west4-b",
+	"us-west4-c",
+}
+
+func buildInstanceOptions() Options {
+	return Options{
 		"NETWORK": {
 			Description: "The network id to use.",
 		},
@@ -296,11 +325,11 @@ fi`,
 			Default:     "projects/cos-cloud/global/images/cos-101-17162-127-5",
 		},
 		"SERVICE_ACCOUNT": {
-			Description: "A service account to attach",
+			Description: "A service account to attach.",
 			Default:     "",
 		},
 		"PUBLIC_IP_ENABLED": {
-			Description: "Use a public ip to access the instance",
+			Description: "Use a public ip to access the instance.",
 			Default:     "true",
 		},
 		"MACHINE_TYPE": {
@@ -315,6 +344,11 @@ fi`,
 				"a2-highgpu-1g", "a2-highgpu-2g",
 			},
 		},
+	}
+}
+
+func buildAgentOptions() Options {
+	return Options{
 		"INACTIVITY_TIMEOUT": {
 			Description: "If defined, will automatically stop the VM after the inactivity period.",
 			Default:     "5m",
@@ -331,16 +365,10 @@ fi`,
 			Description: "The path where to inject the DevPod agent to.",
 			Default:     "/var/lib/toolbox/devpod",
 		},
-		"GCLOUD_PROVIDER_TOKEN": {
-			Local:       true,
-			Hidden:      true,
-			Cache:       "5m",
-			Description: "The Google Cloud auth token to use",
-			Command:     "${GCLOUD_PROVIDER} token",
-		},
 	}
 }
 
+//nolint:gosec // G101: template variables, not actual credentials
 func buildAgent(cfg *buildConfig) (Agent, error) {
 	linuxBins, err := buildBinaries(cfg, linuxPlatforms())
 	if err != nil {
@@ -484,7 +512,7 @@ func linuxPlatforms() []string {
 }
 
 func parseChecksums(path string) (map[string]string, error) {
-	file, err := os.Open(path)
+	file, err := os.Open(path) //nolint:gosec // path is a build-time constant
 	if err != nil {
 		return nil, err
 	}

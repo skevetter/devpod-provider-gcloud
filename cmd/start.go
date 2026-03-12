@@ -8,10 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StartCmd holds the cmd flags
+// StartCmd holds the cmd flags.
 type StartCmd struct{}
 
-// NewStartCmd defines a command
+// NewStartCmd defines a command.
 func NewStartCmd() *cobra.Command {
 	cmd := &StartCmd{}
 	return &cobra.Command{
@@ -28,7 +28,7 @@ func NewStartCmd() *cobra.Command {
 	}
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *StartCmd) Run(ctx context.Context, options *options.Options) error {
 	client, err := gcloud.NewClient(ctx, options.Project, options.Zone)
 	if err != nil {

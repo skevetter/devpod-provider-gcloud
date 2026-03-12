@@ -17,10 +17,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CreateCmd holds the cmd flags
+// CreateCmd holds the cmd flags.
 type CreateCmd struct{}
 
-// NewCreateCmd defines a command
+// NewCreateCmd defines a command.
 func NewCreateCmd() *cobra.Command {
 	cmd := &CreateCmd{}
 	return &cobra.Command{
@@ -37,7 +37,7 @@ func NewCreateCmd() *cobra.Command {
 	}
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *CreateCmd) Run(ctx context.Context, options *options.Options) error {
 	client, err := gcloud.NewClient(ctx, options.Project, options.Zone)
 	if err != nil {
@@ -59,84 +59,108 @@ func buildInstance(options *options.Options) (*computepb.Instance, error) {
 		return nil, errors.Wrap(err, "parse disk size")
 	}
 
-	// generate ssh keys
-	publicKeyBase, err := ssh.GetPublicKeyBase(options.MachineFolder)
-	if err != nil {
-		return nil, errors.Wrap(err, "generate public key")
-	}
-
-	publicKey, err := base64.StdEncoding.DecodeString(publicKeyBase)
+	publicKey, err := loadPublicKey(options.MachineFolder)
 	if err != nil {
 		return nil, err
 	}
-	serviceAccounts := []*computepb.ServiceAccount{}
-	if options.ServiceAccount != "" {
-		serviceAccounts = []*computepb.ServiceAccount{
-			{
-				Email: &options.ServiceAccount,
-				Scopes: []string{
-					"https://www.googleapis.com/auth/cloud-platform",
-				},
-			},
-		}
-	}
 
-	// generate instance object
 	instance := &computepb.Instance{
-		Scheduling: &computepb.Scheduling{
-			AutomaticRestart:  ptr.Ptr(true),
-			OnHostMaintenance: ptr.Ptr(getMaintenancePolicy(options.MachineType)),
-		},
-		Metadata: &computepb.Metadata{
-			Items: []*computepb.Items{
-				{
-					Key:   ptr.Ptr("ssh-keys"),
-					Value: ptr.Ptr("devpod:" + string(publicKey)),
-				},
-			},
-		},
-		MachineType: ptr.Ptr(
-			fmt.Sprintf(
-				"projects/%s/zones/%s/machineTypes/%s",
-				options.Project,
-				options.Zone,
-				options.MachineType,
-			),
-		),
-		Disks: []*computepb.AttachedDisk{
-			{
-				AutoDelete: ptr.Ptr(true),
-				Boot:       ptr.Ptr(true),
-				DeviceName: ptr.Ptr(options.MachineID),
-				InitializeParams: &computepb.AttachedDiskInitializeParams{
-					DiskSizeGb: ptr.Ptr(int64(diskSize)),
-					DiskType: ptr.Ptr(
-						fmt.Sprintf(
-							"projects/%s/zones/%s/diskTypes/pd-balanced",
-							options.Project,
-							options.Zone,
-						),
-					),
-					SourceImage: ptr.Ptr(options.DiskImage),
-				},
-			},
-		},
-		Tags: buildInstanceTags(options),
-		NetworkInterfaces: []*computepb.NetworkInterface{
-			{
-				Network:       normalizeNetworkID(options),
-				Subnetwork:    normalizeSubnetworkID(options),
-				AccessConfigs: getAccessConfig(options),
-			},
-		},
+		Scheduling:        buildScheduling(options.MachineType),
+		Metadata:          buildMetadata(publicKey),
+		MachineType:       ptr.Ptr(machineTypeURI(options)),
+		Disks:             buildDisks(options, int64(diskSize)),
+		Tags:              buildInstanceTags(options),
+		NetworkInterfaces: buildNetworkInterfaces(options),
 		Zone: ptr.Ptr(
 			fmt.Sprintf("projects/%s/zones/%s", options.Project, options.Zone),
 		),
 		Name:            ptr.Ptr(options.MachineID),
-		ServiceAccounts: serviceAccounts,
+		ServiceAccounts: buildServiceAccounts(options),
 	}
 
 	return instance, nil
+}
+
+func loadPublicKey(machineFolder string) (string, error) {
+	publicKeyBase, err := ssh.GetPublicKeyBase(machineFolder)
+	if err != nil {
+		return "", errors.Wrap(err, "generate public key")
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(publicKeyBase)
+	if err != nil {
+		return "", err
+	}
+
+	return string(decoded), nil
+}
+
+func buildScheduling(machineType string) *computepb.Scheduling {
+	return &computepb.Scheduling{
+		AutomaticRestart:  ptr.Ptr(true),
+		OnHostMaintenance: ptr.Ptr(getMaintenancePolicy(machineType)),
+	}
+}
+
+func buildMetadata(publicKey string) *computepb.Metadata {
+	return &computepb.Metadata{
+		Items: []*computepb.Items{
+			{
+				Key:   ptr.Ptr("ssh-keys"),
+				Value: ptr.Ptr("devpod:" + publicKey),
+			},
+		},
+	}
+}
+
+func machineTypeURI(options *options.Options) string {
+	return fmt.Sprintf(
+		"projects/%s/zones/%s/machineTypes/%s",
+		options.Project, options.Zone, options.MachineType,
+	)
+}
+
+func buildDisks(options *options.Options, diskSize int64) []*computepb.AttachedDisk {
+	return []*computepb.AttachedDisk{
+		{
+			AutoDelete: ptr.Ptr(true),
+			Boot:       ptr.Ptr(true),
+			DeviceName: ptr.Ptr(options.MachineID),
+			InitializeParams: &computepb.AttachedDiskInitializeParams{
+				DiskSizeGb: ptr.Ptr(diskSize),
+				DiskType: ptr.Ptr(fmt.Sprintf(
+					"projects/%s/zones/%s/diskTypes/pd-balanced",
+					options.Project, options.Zone,
+				)),
+				SourceImage: ptr.Ptr(options.DiskImage),
+			},
+		},
+	}
+}
+
+func buildNetworkInterfaces(options *options.Options) []*computepb.NetworkInterface {
+	return []*computepb.NetworkInterface{
+		{
+			Network:       normalizeNetworkID(options),
+			Subnetwork:    normalizeSubnetworkID(options),
+			AccessConfigs: getAccessConfig(options),
+		},
+	}
+}
+
+func buildServiceAccounts(options *options.Options) []*computepb.ServiceAccount {
+	if options.ServiceAccount == "" {
+		return []*computepb.ServiceAccount{}
+	}
+
+	return []*computepb.ServiceAccount{
+		{
+			Email: &options.ServiceAccount,
+			Scopes: []string{
+				"https://www.googleapis.com/auth/cloud-platform",
+			},
+		},
+	}
 }
 
 func getAccessConfig(options *options.Options) []*computepb.AccessConfig {

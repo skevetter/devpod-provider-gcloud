@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/skevetter/devpod-provider-gcloud/pkg/gcloud"
@@ -10,10 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DescribeCmd holds the cmd flags
+// DescribeCmd holds the cmd flags.
 type DescribeCmd struct{}
 
-// NewDescribeCmd defines a command
+// NewDescribeCmd defines a command.
 func NewDescribeCmd() *cobra.Command {
 	cmd := &DescribeCmd{}
 	return &cobra.Command{
@@ -30,19 +29,15 @@ func NewDescribeCmd() *cobra.Command {
 	}
 }
 
-// Run runs the command logic
-func (cmd *DescribeCmd) Run(ctx context.Context, options *options.Options) error {
-	client, err := gcloud.NewClient(ctx, options.Project, options.Zone)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = client.Close() }()
+// Run runs the command logic.
+func (cmd *DescribeCmd) Run(ctx context.Context, opts *options.Options) error {
+	return withGCloudClient(ctx, opts, func(ctx context.Context, c *gcloud.Client) error {
+		result, err := c.Describe(ctx, opts.MachineID)
+		if err != nil {
+			return err
+		}
 
-	json, err := client.Describe(ctx, options.MachineID)
-	if err != nil {
+		_, err = os.Stdout.WriteString(result)
 		return err
-	}
-
-	_, err = fmt.Fprint(os.Stdout, json)
-	return err
+	})
 }

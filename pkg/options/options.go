@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+// Options holds all provider configuration.
 type Options struct {
 	MachineID     string
 	MachineFolder string
@@ -21,59 +22,66 @@ type Options struct {
 	PublicIP       bool
 }
 
+// FromEnv loads options from environment variables.
 func FromEnv(withMachine, withFolder bool) (*Options, error) {
 	retOptions := &Options{}
 
-	var err error
-	if withMachine {
-		retOptions.MachineID, err = fromEnvOrError("MACHINE_ID")
-		if err != nil {
-			return nil, err
-		}
-		// prefix with devpod-
-		retOptions.MachineID = "devpod-" + retOptions.MachineID
-	}
-	if withFolder {
-		retOptions.MachineFolder, err = fromEnvOrError("MACHINE_FOLDER")
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	retOptions.Project, err = fromEnvOrError("PROJECT")
-	if err != nil {
-		return nil, err
-	}
-	retOptions.Zone, err = fromEnvOrError("ZONE")
-	if err != nil {
-		return nil, err
-	}
-	retOptions.DiskSize, err = fromEnvOrError("DISK_SIZE")
-	if err != nil {
-		return nil, err
-	}
-	retOptions.DiskImage, err = fromEnvOrError("DISK_IMAGE")
-	if err != nil {
-		return nil, err
-	}
-	retOptions.MachineType, err = fromEnvOrError("MACHINE_TYPE")
-	if err != nil {
+	if err := loadMachineOptions(retOptions, withMachine, withFolder); err != nil {
 		return nil, err
 	}
 
-	publicIp, err := fromEnvOrError("PUBLIC_IP_ENABLED")
-	if err != nil {
+	if err := loadRequiredOptions(retOptions); err != nil {
 		return nil, err
 	}
 
-	retOptions.PublicIP = publicIp == "true"
-
+	retOptions.PublicIP = os.Getenv("PUBLIC_IP_ENABLED") == "true"
 	retOptions.ServiceAccount = os.Getenv("SERVICE_ACCOUNT")
 	retOptions.Network = os.Getenv("NETWORK")
 	retOptions.Subnetwork = os.Getenv("SUBNETWORK")
 	retOptions.Tag = os.Getenv("TAG")
 
 	return retOptions, nil
+}
+
+func loadMachineOptions(opts *Options, withMachine, withFolder bool) error {
+	var err error
+	if withMachine {
+		opts.MachineID, err = fromEnvOrError("MACHINE_ID")
+		if err != nil {
+			return err
+		}
+		opts.MachineID = "devpod-" + opts.MachineID
+	}
+	if withFolder {
+		opts.MachineFolder, err = fromEnvOrError("MACHINE_FOLDER")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func loadRequiredOptions(opts *Options) error {
+	required := []struct {
+		dest *string
+		name string
+	}{
+		{&opts.Project, "PROJECT"},
+		{&opts.Zone, "ZONE"},
+		{&opts.DiskSize, "DISK_SIZE"},
+		{&opts.DiskImage, "DISK_IMAGE"},
+		{&opts.MachineType, "MACHINE_TYPE"},
+	}
+
+	for _, r := range required {
+		val, err := fromEnvOrError(r.name)
+		if err != nil {
+			return err
+		}
+		*r.dest = val
+	}
+
+	return nil
 }
 
 func fromEnvOrError(name string) (string, error) {

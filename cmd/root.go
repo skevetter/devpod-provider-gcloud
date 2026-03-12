@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// NewRootCmd returns a new root command
+// NewRootCmd returns a new root command.
 func NewRootCmd() *cobra.Command {
 	gcloudCmd := &cobra.Command{
 		Use:           "devpod-provider-gcloud",
@@ -49,7 +49,7 @@ func Execute() {
 	}
 }
 
-// BuildRoot creates a new root command from the
+// BuildRoot creates a new root command from the available subcommands.
 func BuildRoot() *cobra.Command {
 	rootCmd := NewRootCmd()
 

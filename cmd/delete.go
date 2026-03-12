@@ -8,10 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DeleteCmd holds the cmd flags
+// DeleteCmd holds the cmd flags.
 type DeleteCmd struct{}
 
-// NewDeleteCmd defines a command
+// NewDeleteCmd defines a command.
 func NewDeleteCmd() *cobra.Command {
 	cmd := &DeleteCmd{}
 	return &cobra.Command{
@@ -28,7 +28,7 @@ func NewDeleteCmd() *cobra.Command {
 	}
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *DeleteCmd) Run(ctx context.Context, options *options.Options) error {
 	client, err := gcloud.NewClient(ctx, options.Project, options.Zone)
 	if err != nil {

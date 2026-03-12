@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/skevetter/devpod-provider-gcloud/pkg/gcloud"
@@ -10,10 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StatusCmd holds the cmd flags
+// StatusCmd holds the cmd flags.
 type StatusCmd struct{}
 
-// NewStatusCmd defines a command
+// NewStatusCmd defines a command.
 func NewStatusCmd() *cobra.Command {
 	cmd := &StatusCmd{}
 	return &cobra.Command{
@@ -30,19 +29,15 @@ func NewStatusCmd() *cobra.Command {
 	}
 }
 
-// Run runs the command logic
-func (cmd *StatusCmd) Run(ctx context.Context, options *options.Options) error {
-	client, err := gcloud.NewClient(ctx, options.Project, options.Zone)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = client.Close() }()
+// Run runs the command logic.
+func (cmd *StatusCmd) Run(ctx context.Context, opts *options.Options) error {
+	return withGCloudClient(ctx, opts, func(ctx context.Context, c *gcloud.Client) error {
+		status, err := c.Status(ctx, opts.MachineID)
+		if err != nil {
+			return err
+		}
 
-	status, err := client.Status(ctx, options.MachineID)
-	if err != nil {
+		_, err = os.Stdout.WriteString(string(status))
 		return err
-	}
-
-	_, err = fmt.Fprint(os.Stdout, status)
-	return err
+	})
 }

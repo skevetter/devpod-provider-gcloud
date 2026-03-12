@@ -2,16 +2,16 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+	"os"
 
 	"github.com/skevetter/devpod-provider-gcloud/pkg/gcloud"
 	"github.com/spf13/cobra"
 )
 
-// TokenCmd holds the cmd flags
+// TokenCmd holds the cmd flags.
 type TokenCmd struct{}
 
-// NewTokenCmd defines a command
+// NewTokenCmd defines a command.
 func NewTokenCmd() *cobra.Command {
 	cmd := &TokenCmd{}
 	return &cobra.Command{
@@ -23,13 +23,13 @@ func NewTokenCmd() *cobra.Command {
 	}
 }
 
-// Run runs the command logic
+// Run runs the command logic.
 func (cmd *TokenCmd) Run(ctx context.Context) error {
 	tok, err := gcloud.GetToken(ctx)
 	if err != nil {
 		return err
 	}
 
-	fmt.Print(string(tok))
-	return nil
+	_, err = os.Stdout.Write(tok)
+	return err
 }

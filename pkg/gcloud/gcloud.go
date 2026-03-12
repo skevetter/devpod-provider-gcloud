@@ -53,34 +53,41 @@ func SetupEnvJson(ctx context.Context) error {
 	gcloudKeyFile := os.Getenv("DEVPOD_PROVIDER_GCLOUD_KEY_FILE")
 	if gcloudKeyFile != "" {
 		return os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", gcloudKeyFile)
-	} else {
-		gcloudKey := os.Getenv("DEVPOD_PROVIDER_GCLOUD_KEY")
-		if gcloudKey == "" {
-			gcloudKey = os.Getenv("GCLOUD_JSON_AUTH")
-		}
-		if gcloudKey != "" {
-			exePath, err := os.Executable()
-			if err != nil {
-				return err
-			}
-			destination := filepath.Join(path.Dir(exePath), "gcloud_auth.json")
-
-			f, err := os.OpenFile(destination, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
-			if err != nil {
-				return err
-			}
-			defer func() { _ = f.Close() }()
-
-			_, err = f.WriteString(gcloudKey)
-			if err != nil {
-				return err
-			}
-
-			return os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", destination)
-		}
 	}
 
-	return nil
+	gcloudKey := os.Getenv("DEVPOD_PROVIDER_GCLOUD_KEY")
+	if gcloudKey == "" {
+		gcloudKey = os.Getenv("GCLOUD_JSON_AUTH")
+	}
+	if gcloudKey == "" {
+		return nil
+	}
+
+	return writeKeyFile(gcloudKey)
+}
+
+func writeKeyFile(gcloudKey string) error {
+	exePath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	destination := filepath.Join(path.Dir(exePath), "gcloud_auth.json")
+
+	//nolint:gosec // path derived from own executable
+	f, err := os.OpenFile(
+		destination, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600,
+	)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = f.Close() }()
+
+	_, err = f.WriteString(gcloudKey)
+	if err != nil {
+		return err
+	}
+
+	return os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", destination)
 }
 
 func DefaultTokenSource(ctx context.Context) (oauth2.TokenSource, error) {
@@ -119,7 +126,7 @@ func GetToken(ctx context.Context) ([]byte, error) {
 
 	t.RefreshToken = ""
 	t.TokenType = ""
-	return json.Marshal(t)
+	return json.Marshal(t) //nolint:gosec // AccessToken is intentionally marshaled for provider use
 }
 
 func (c *Client) Init(ctx context.Context) error {
