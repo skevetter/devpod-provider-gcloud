@@ -3,35 +3,51 @@
   "automerge": false,
   "automergeType": "pr",
   "automergeStrategy": "squash",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:recommended"
+  ],
   "pre-commit": {
     "enabled": true
   },
   "dependencyDashboard": false,
   "prConcurrentLimit": 1,
   "platformAutomerge": true,
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
   "packageRules": [
     {
-      "matchUpdateTypes": ["major"],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "automerge": false,
       "prPriority": -1
     },
     {
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "prPriority": 10
     },
     {
-      "matchManagers": ["github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
       "automerge": true,
       "prPriority": 5
     },
     {
-      "matchManagers": ["pre-commit"],
+      "matchManagers": [
+        "pre-commit"
+      ],
       "automerge": true,
       "prPriority": 4
     },
     {
-      "matchManagers": ["gomod"],
+      "matchManagers": [
+        "gomod"
+      ],
       "automerge": true,
       "prPriority": 3
     }
