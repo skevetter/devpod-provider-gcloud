@@ -57,6 +57,9 @@ func buildInstance(options *options.Options) (*computepb.Instance, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse disk size: %w", err)
 	}
+	if diskSize <= 0 {
+		return nil, fmt.Errorf("invalid disk size: must be > 0, got %d", diskSize)
+	}
 
 	publicKey, err := loadPublicKey(options.MachineFolder)
 	if err != nil {
@@ -208,7 +211,11 @@ func normalizeSubnetworkID(options *options.Options) *string {
 
 	project := options.Project
 	zone := options.Zone
-	region := zone[:strings.LastIndex(zone, "-")]
+	idx := strings.LastIndex(zone, "-")
+	if idx <= 0 {
+		return nil
+	}
+	region := zone[:idx]
 
 	parts := strings.Split(sn, "/")
 	switch len(parts) {
