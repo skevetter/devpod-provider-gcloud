@@ -206,7 +206,7 @@ func (c *Client) Get(ctx context.Context, name string) (*computepb.Instance, err
 	return instance, nil
 }
 
-func (c *Client) Status(ctx context.Context, name string) (string, error) {
+func (c *Client) Status(ctx context.Context, name string) (client.Status, error) {
 	instance, err := c.Get(ctx, name)
 	if err != nil || instance == nil {
 		return client.StatusNotFound, err
