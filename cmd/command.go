@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
-	"syscall"
 	"time"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
@@ -212,7 +210,7 @@ func waitForPort(ctx context.Context, port string) error {
 		default:
 			l, err := net.Listen("tcp", "localhost:"+port)
 			if err != nil {
-				if errors.Is(err, syscall.EADDRINUSE) {
+				if isAddrInUse(err) {
 					return nil
 				}
 				return err
