@@ -3,6 +3,7 @@ package options
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 // Options holds all provider configuration.
@@ -50,7 +51,9 @@ func loadMachineOptions(opts *Options, withMachine, withFolder bool) error {
 		if err != nil {
 			return err
 		}
-		opts.MachineID = "devpod-" + opts.MachineID
+		if !strings.HasPrefix(opts.MachineID, "devpod-") {
+			opts.MachineID = "devpod-" + opts.MachineID
+		}
 	}
 	if withFolder {
 		opts.MachineFolder, err = fromEnvOrError("MACHINE_FOLDER")

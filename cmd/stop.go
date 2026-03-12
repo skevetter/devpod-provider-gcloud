@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -36,7 +35,7 @@ func NewStopCmd() *cobra.Command {
 	}
 
 	stopCmd.Flags().
-		BoolVar(&cmd.Raw, "raw", false, "If enabled will sent a raw request instead of using the SDK")
+		BoolVar(&cmd.Raw, "raw", false, "If enabled, will send a raw request instead of using the SDK")
 	return stopCmd
 }
 
@@ -82,10 +81,7 @@ func rawStop(ctx context.Context, options *options.Options) error {
 	}
 	req.Header.Set("Authorization", "Bearer "+tok.AccessToken)
 
-	client := &http.Client{Transport: &http.Transport{
-		//nolint:gosec // required for internal API calls
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}}
+	client := &http.Client{}
 
 	resp, err := client.Do(req)
 	if err != nil {

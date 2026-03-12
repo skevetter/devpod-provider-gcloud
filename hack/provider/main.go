@@ -224,13 +224,8 @@ func buildCoreOptions() Options {
 }
 
 func zoneCommand() string {
-	return `GCLOUD_ZONE=$(gcloud config list --quiet --verbosity=error` +
-		` --format "value(compute.zone)" 2>/dev/null || true)
-if [ -z "$GCLOUD_ZONE" ]; then
-  echo "europe-west2-b"
-else
-  echo $GCLOUD_ZONE
-fi`
+	return `gcloud config list --quiet --verbosity=error` +
+		` --format "value(compute.zone)" 2>/dev/null || true`
 }
 
 //nolint:gochecknoglobals // static configuration data

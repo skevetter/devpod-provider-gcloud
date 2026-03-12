@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"time"
 
@@ -143,12 +144,14 @@ func resolveIAPTarget(
 		return sshTarget{}, err
 	}
 
+	zoneName := path.Base(*instance.Zone)
+
 	gcloudCmd := exec.CommandContext( //nolint:gosec // args from trusted provider config
 		ctx, "gcloud",
 		"compute", "start-iap-tunnel",
 		*instance.Name, "22",
 		"--local-host-port=localhost:"+port,
-		"--zone="+*instance.Zone,
+		"--zone="+zoneName,
 	)
 
 	if err = gcloudCmd.Start(); err != nil {
@@ -158,7 +161,10 @@ func resolveIAPTarget(
 	timeoutCtx, cancelFn := context.WithTimeout(ctx, 30*time.Second)
 	defer cancelFn()
 
-	waitForPort(timeoutCtx, port)
+	if err := waitForPort(timeoutCtx, port); err != nil {
+		_ = gcloudCmd.Process.Kill()
+		return sshTarget{}, fmt.Errorf("wait for IAP tunnel: %w", err)
+	}
 
 	return sshTarget{
 		host:    "localhost",
@@ -177,15 +183,15 @@ func findAvailablePort() (string, error) {
 	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port), nil
 }
 
-func waitForPort(ctx context.Context, port string) {
+func waitForPort(ctx context.Context, port string) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return ctx.Err()
 		default:
 			l, err := net.Listen("tcp", "localhost:"+port)
 			if err != nil {
-				return
+				return nil
 			}
 			_ = l.Close()
 			time.Sleep(1 * time.Second)
