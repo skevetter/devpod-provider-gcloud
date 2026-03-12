@@ -70,7 +70,7 @@ func (cmd *CommandCmd) Run(ctx context.Context, options *options.Options) error 
 		defer t.cleanup()
 	}
 
-	sshClient, err := ssh.NewSSHClient("devpod", t.host+":"+t.port, privateKey)
+	sshClient, err := ssh.NewSSHClient("devpod", net.JoinHostPort(t.host, t.port), privateKey)
 	if err != nil {
 		return fmt.Errorf("create ssh client: %w", err)
 	}
@@ -115,7 +115,7 @@ func resolveTarget(
 		return resolvePublicTarget(instance)
 	}
 
-	return resolveIAPTarget(ctx, instance)
+	return resolveIAPTarget(ctx, options.Project, instance)
 }
 
 func resolvePublicTarget(
@@ -138,7 +138,7 @@ func resolvePublicTarget(
 }
 
 func resolveIAPTarget(
-	ctx context.Context, instance *computepb.Instance,
+	ctx context.Context, project string, instance *computepb.Instance,
 ) (sshTarget, error) {
 	if instance.GetName() == "" || instance.GetZone() == "" {
 		return sshTarget{}, fmt.Errorf("instance missing name or zone")
@@ -157,24 +157,40 @@ func resolveIAPTarget(
 		instance.GetName(), "22",
 		"--local-host-port=localhost:"+port,
 		"--zone="+zoneName,
+		"--project="+project,
 	)
 
 	if err = gcloudCmd.Start(); err != nil {
 		return sshTarget{}, fmt.Errorf("start tunnel: %w", err)
 	}
 
+	waitErr := make(chan error, 1)
+	go func() { waitErr <- gcloudCmd.Wait() }()
+
 	timeoutCtx, cancelFn := context.WithTimeout(ctx, 30*time.Second)
 	defer cancelFn()
 
-	if err := waitForPort(timeoutCtx, port); err != nil {
-		_ = gcloudCmd.Process.Kill()
-		return sshTarget{}, fmt.Errorf("wait for IAP tunnel: %w", err)
+	portReady := make(chan error, 1)
+	go func() { portReady <- waitForPort(timeoutCtx, port) }()
+
+	select {
+	case err := <-portReady:
+		if err != nil {
+			_ = gcloudCmd.Process.Kill()
+			<-waitErr
+			return sshTarget{}, fmt.Errorf("wait for IAP tunnel: %w", err)
+		}
+	case err := <-waitErr:
+		return sshTarget{}, fmt.Errorf("gcloud tunnel exited early: %w", err)
 	}
 
 	return sshTarget{
-		host:    "localhost",
-		port:    port,
-		cleanup: func() { _ = gcloudCmd.Process.Kill() },
+		host: "localhost",
+		port: port,
+		cleanup: func() {
+			_ = gcloudCmd.Process.Kill()
+			<-waitErr
+		},
 	}, nil
 }
 

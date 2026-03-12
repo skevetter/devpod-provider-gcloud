@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 
@@ -35,14 +36,16 @@ func Execute() {
 	// execute command
 	err := rootCmd.Execute()
 	if err != nil {
-		if exitErr, ok := err.(*ssh.ExitError); ok {
-			os.Exit(exitErr.ExitStatus())
+		var sshExitErr *ssh.ExitError
+		if errors.As(err, &sshExitErr) {
+			os.Exit(sshExitErr.ExitStatus())
 		}
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			if len(exitErr.Stderr) > 0 {
-				log.Default.ErrorStreamOnly().Error(string(exitErr.Stderr))
+		var execExitErr *exec.ExitError
+		if errors.As(err, &execExitErr) {
+			if len(execExitErr.Stderr) > 0 {
+				log.Default.ErrorStreamOnly().Error(string(execExitErr.Stderr))
 			}
-			os.Exit(exitErr.ExitCode())
+			os.Exit(execExitErr.ExitCode())
 		}
 
 		log.Default.Fatal(err)

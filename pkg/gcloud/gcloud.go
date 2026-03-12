@@ -3,9 +3,9 @@ package gcloud
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -71,19 +71,9 @@ func writeKeyFile(gcloudKey string) error {
 	if err != nil {
 		return err
 	}
-	destination := filepath.Join(path.Dir(exePath), "gcloud_auth.json")
+	destination := filepath.Join(filepath.Dir(exePath), "gcloud_auth.json")
 
-	//nolint:gosec // path derived from own executable
-	f, err := os.OpenFile(
-		destination, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600,
-	)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = f.Close() }()
-
-	_, err = f.WriteString(gcloudKey)
-	if err != nil {
+	if err := os.WriteFile(destination, []byte(gcloudKey), 0o600); err != nil {
 		return err
 	}
 
@@ -134,7 +124,7 @@ func (c *Client) Init(ctx context.Context) error {
 		Project: c.Project,
 		Zone:    c.Zone,
 	}).Next()
-	if err != nil && err != iterator.Done {
+	if err != nil && !errors.Is(err, iterator.Done) {
 		return fmt.Errorf("cannot list instances: %v", err)
 	}
 
@@ -202,11 +192,10 @@ func (c *Client) Get(ctx context.Context, name string) (*computepb.Instance, err
 		Zone:     c.Zone,
 	})
 	if err != nil {
-		// check if api error
-		apiError, ok := err.(*apierror.APIError)
-		if ok {
-			googleAPIError, ok := apiError.Unwrap().(*googleapi.Error)
-			if ok && googleAPIError.Code == 404 {
+		var apiErr *apierror.APIError
+		if errors.As(err, &apiErr) {
+			var googleErr *googleapi.Error
+			if errors.As(apiErr.Unwrap(), &googleErr) && googleErr.Code == 404 {
 				return nil, nil
 			}
 		}

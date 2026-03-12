@@ -70,11 +70,8 @@ func buildInstance(options *options.Options) (*computepb.Instance, error) {
 		Disks:             buildDisks(options, int64(diskSize)),
 		Tags:              buildInstanceTags(options),
 		NetworkInterfaces: buildNetworkInterfaces(options),
-		Zone: ptr.Ptr(
-			fmt.Sprintf("projects/%s/zones/%s", options.Project, options.Zone),
-		),
-		Name:            ptr.Ptr(options.MachineID),
-		ServiceAccounts: buildServiceAccounts(options),
+		Name:              ptr.Ptr(options.MachineID),
+		ServiceAccounts:   buildServiceAccounts(options),
 	}
 
 	return instance, nil
@@ -185,31 +182,27 @@ func buildInstanceTags(options *options.Options) *computepb.Tags {
 
 func normalizeNetworkID(options *options.Options) *string {
 	network := options.Network
-	project := options.Project
-
-	if len(network) == 0 {
+	if network == "" {
 		return nil
 	}
 
-	// projects/{{project}}/regions/{{region}}/subnetworks/{{name}}
-	if regexp.MustCompile("projects/([^/]+)/global/networks/([^/]+)").MatchString(network) {
+	// projects/{{project}}/global/networks/{{name}}
+	if strings.HasPrefix(network, "projects/") {
 		return ptr.Ptr(network)
 	}
 
 	// {{project}}/{{name}}
-	if regexp.MustCompile("([^/]+)/([^/]+)").MatchString(network) {
-		s := strings.Split(network, "/")
-		return ptr.Ptr(fmt.Sprintf("projects/%s/global/networks/%s", s[0], s[1]))
+	if project, name, ok := strings.Cut(network, "/"); ok {
+		return ptr.Ptr(fmt.Sprintf("projects/%s/global/networks/%s", project, name))
 	}
 
 	// {{name}}
-	return ptr.Ptr(fmt.Sprintf("projects/%s/global/networks/%s", project, network))
+	return ptr.Ptr(fmt.Sprintf("projects/%s/global/networks/%s", options.Project, network))
 }
 
 func normalizeSubnetworkID(options *options.Options) *string {
 	sn := strings.TrimSpace(options.Subnetwork)
-
-	if len(sn) == 0 {
+	if sn == "" {
 		return nil
 	}
 
@@ -217,28 +210,24 @@ func normalizeSubnetworkID(options *options.Options) *string {
 	zone := options.Zone
 	region := zone[:strings.LastIndex(zone, "-")]
 
-	// projects/{{project}}/regions/{{region}}/subnetworks/{{name}}
-	if regexp.MustCompile("projects/([^/]+)/regions/([^/]+)/subnetworks/([^/]+)").MatchString(sn) {
+	parts := strings.Split(sn, "/")
+	switch len(parts) {
+	case 1:
+		// {{name}}
+		return ptr.Ptr(fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", project, region, sn))
+	case 2:
+		// {{region}}/{{name}}
+		return ptr.Ptr(fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", project, parts[0], parts[1]))
+	case 3:
+		// {{project}}/{{region}}/{{name}}
+		return ptr.Ptr(fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", parts[0], parts[1], parts[2]))
+	default:
+		// projects/{{project}}/regions/{{region}}/subnetworks/{{name}} or other full path
 		return ptr.Ptr(sn)
 	}
-
-	// {{project}}/{{region}}/{{name}}
-	if regexp.MustCompile("([^/]+)/([^/]+)/([^/]+)").MatchString(sn) {
-		s := strings.Split(sn, "/")
-		return ptr.Ptr(fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", s[0], s[1], s[2]))
-	}
-
-	// {{region}}/{{name}}
-	if regexp.MustCompile("([^/]+)/([^/]+)").MatchString(sn) {
-		s := strings.Split(sn, "/")
-		return ptr.Ptr(fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", project, s[0], s[1]))
-	}
-
-	// {{name}}
-	return ptr.Ptr(fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", project, region, sn))
 }
 
-var gpuInstancePattern *regexp.Regexp = regexp.MustCompile(`^[agn][0-9]`)
+var gpuInstancePattern = regexp.MustCompile(`^[agn][0-9]`)
 
 func getMaintenancePolicy(machineType string) string {
 	if gpuInstancePattern.MatchString(machineType) {
