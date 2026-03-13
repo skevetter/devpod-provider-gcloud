@@ -242,6 +242,10 @@ func normalizeSubnetworkID(options *options.Options) *string {
 	}
 }
 
+// gpuInstancePattern matches accelerator/GPU machine type families (a2, a3, g2)
+// that require TERMINATE maintenance policy. General-purpose families (n1, n2, c2, etc.)
+// support live migration and use MIGRATE.
+// See https://cloud.google.com/compute/docs/instances/live-migration-process#limitations
 var gpuInstancePattern = regexp.MustCompile(`^[ag][0-9]`)
 
 func getMaintenancePolicy(machineType string) string {
