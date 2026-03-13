@@ -1,13 +1,15 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
 	"path"
-	"strconv"
+	"regexp"
 	"time"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
@@ -16,6 +18,8 @@ import (
 	"github.com/skevetter/devpod/pkg/ssh"
 	"github.com/spf13/cobra"
 )
+
+var iapPortPattern = regexp.MustCompile(`Listening on port \[(\d+)\]`)
 
 // CommandCmd holds the cmd flags.
 type CommandCmd struct{}
@@ -142,21 +146,21 @@ func resolveIAPTarget(
 		return sshTarget{}, fmt.Errorf("instance missing name or zone")
 	}
 
-	port, err := findAvailablePort()
-	if err != nil {
-		return sshTarget{}, err
-	}
-
 	zoneName := path.Base(instance.GetZone())
 
 	gcloudCmd := exec.CommandContext( //nolint:gosec // args from trusted provider config
 		ctx, "gcloud",
 		"compute", "start-iap-tunnel",
 		instance.GetName(), "22",
-		"--local-host-port=localhost:"+port,
+		"--local-host-port=localhost:0",
 		"--zone="+zoneName,
 		"--project="+project,
 	)
+
+	stderrPipe, err := gcloudCmd.StderrPipe()
+	if err != nil {
+		return sshTarget{}, fmt.Errorf("create stderr pipe: %w", err)
+	}
 
 	if err = gcloudCmd.Start(); err != nil {
 		return sshTarget{}, fmt.Errorf("start tunnel: %w", err)
@@ -165,21 +169,11 @@ func resolveIAPTarget(
 	waitErr := make(chan error, 1)
 	go func() { waitErr <- gcloudCmd.Wait() }()
 
-	timeoutCtx, cancelFn := context.WithTimeout(ctx, 30*time.Second)
-	defer cancelFn()
-
-	portReady := make(chan error, 1)
-	go func() { portReady <- waitForPort(timeoutCtx, port) }()
-
-	select {
-	case err := <-portReady:
-		if err != nil {
-			_ = gcloudCmd.Process.Kill()
-			<-waitErr
-			return sshTarget{}, fmt.Errorf("wait for IAP tunnel: %w", err)
-		}
-	case err := <-waitErr:
-		return sshTarget{}, fmt.Errorf("gcloud tunnel exited early: %w", err)
+	port, err := parseIAPPort(ctx, stderrPipe)
+	if err != nil {
+		_ = gcloudCmd.Process.Kill()
+		<-waitErr
+		return sshTarget{}, fmt.Errorf("parse IAP tunnel port: %w", err)
 	}
 
 	return sshTarget{
@@ -192,31 +186,33 @@ func resolveIAPTarget(
 	}, nil
 }
 
-func findAvailablePort() (string, error) {
-	l, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		return "", err
-	}
-	defer func() { _ = l.Close() }()
+func parseIAPPort(ctx context.Context, r io.Reader) (string, error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 
-	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port), nil
-}
-
-func waitForPort(ctx context.Context, port string) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			l, err := net.Listen("tcp", "localhost:"+port)
-			if err != nil {
-				if isAddrInUse(err) {
-					return nil
-				}
-				return err
+	portCh := make(chan string, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			if m := iapPortPattern.FindStringSubmatch(scanner.Text()); m != nil {
+				portCh <- m[1]
+				return
 			}
-			_ = l.Close()
-			time.Sleep(1 * time.Second)
 		}
+		if err := scanner.Err(); err != nil {
+			errCh <- err
+		} else {
+			errCh <- fmt.Errorf("gcloud exited without reporting a listening port")
+		}
+	}()
+
+	select {
+	case port := <-portCh:
+		return port, nil
+	case err := <-errCh:
+		return "", err
+	case <-timeoutCtx.Done():
+		return "", timeoutCtx.Err()
 	}
 }

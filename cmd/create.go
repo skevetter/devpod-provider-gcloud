@@ -189,13 +189,17 @@ func normalizeNetworkID(options *options.Options) *string {
 		return nil
 	}
 
-	// projects/{{project}}/global/networks/{{name}}
-	if strings.HasPrefix(network, "projects/") {
+	// Already a full or partial resource path — pass through.
+	if strings.HasPrefix(network, "projects/") ||
+		strings.HasPrefix(network, "/") ||
+		strings.HasPrefix(network, "global/") ||
+		strings.Contains(network, "/networks/") {
 		return ptr.Ptr(network)
 	}
 
-	// {{project}}/{{name}}
-	if project, name, ok := strings.Cut(network, "/"); ok {
+	// {{project}}/{{name}} (exactly one slash, not starting with "/")
+	if strings.Count(network, "/") == 1 {
+		project, name, _ := strings.Cut(network, "/")
 		return ptr.Ptr(fmt.Sprintf("projects/%s/global/networks/%s", project, name))
 	}
 
@@ -238,7 +242,7 @@ func normalizeSubnetworkID(options *options.Options) *string {
 	}
 }
 
-var gpuInstancePattern = regexp.MustCompile(`^[agn][0-9]`)
+var gpuInstancePattern = regexp.MustCompile(`^[ag][0-9]`)
 
 func getMaintenancePolicy(machineType string) string {
 	if gpuInstancePattern.MatchString(machineType) {
