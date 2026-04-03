@@ -35,11 +35,11 @@ func FromEnv(withMachine, withFolder bool) (*Options, error) {
 		return nil, err
 	}
 
-	retOptions.PublicIP = os.Getenv("PUBLIC_IP_ENABLED") == "true"
-	retOptions.ServiceAccount = os.Getenv("SERVICE_ACCOUNT")
-	retOptions.Network = os.Getenv("NETWORK")
-	retOptions.Subnetwork = os.Getenv("SUBNETWORK")
-	retOptions.Tag = os.Getenv("TAG")
+	retOptions.PublicIP = GetEnv("PUBLIC_IP_ENABLED") == "true"
+	retOptions.ServiceAccount = GetEnv("SERVICE_ACCOUNT")
+	retOptions.Network = GetEnv("NETWORK")
+	retOptions.Subnetwork = GetEnv("SUBNETWORK")
+	retOptions.Tag = GetEnv("TAG")
 
 	return retOptions, nil
 }
@@ -88,7 +88,7 @@ func loadRequiredOptions(opts *Options) error {
 }
 
 func fromEnvOrError(name string) (string, error) {
-	val := os.Getenv(name)
+	val := GetEnv(name)
 	if val == "" {
 		return "", fmt.Errorf(
 			"couldn't find option %s in environment, please make sure %s is defined",
@@ -98,4 +98,21 @@ func fromEnvOrError(name string) (string, error) {
 	}
 
 	return val, nil
+}
+
+func GetEnv(key string) string {
+	providerName := os.Getenv("DEVPOD_PROVIDER")
+	if providerName == "" {
+		providerName = "GCLOUD"
+	}
+	providerName = strings.ToUpper(strings.ReplaceAll(providerName, "-", "_"))
+	val := os.Getenv("DEVPOD_PROVIDER_" + providerName + "_" + key)
+	if val != "" {
+		return val
+	}
+	val = os.Getenv("DEVPOD_PROVIDER_" + key)
+	if val != "" {
+		return val
+	}
+	return os.Getenv(key)
 }
