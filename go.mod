@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/compute v1.58.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/googleapis/gax-go/v2 v2.21.0
-	github.com/skevetter/devpod v0.18.1
+	github.com/skevetter/devpod v0.18.2
 	github.com/skevetter/log v0.0.0-20260106023547-bfd26ab1367c
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/crypto v0.49.0
@@ -77,8 +77,8 @@ require (
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/loft-sh/admin-apis v0.0.0-20260219192040-a66d50310311 // indirect
-	github.com/loft-sh/agentapi/v4 v4.7.1 // indirect
+	github.com/loft-sh/admin-apis v0.0.0-20260311181619-506013b79ba0 // indirect
+	github.com/loft-sh/agentapi/v4 v4.8.1 // indirect
 	github.com/loft-sh/api/v4 v4.4.0 // indirect
 	github.com/loft-sh/apiserver v0.0.0-20260113122925-594495a02e96 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
