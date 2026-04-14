@@ -3,7 +3,7 @@ module github.com/skevetter/devpod-provider-gcloud
 go 1.25.8
 
 require (
-	cloud.google.com/go/compute v1.59.0
+	cloud.google.com/go/compute v1.60.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/googleapis/gax-go/v2 v2.21.0
 	github.com/skevetter/devpod v0.21.0
