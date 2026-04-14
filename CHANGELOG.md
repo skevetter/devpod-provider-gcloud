@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/skevetter/devpod-provider-gcloud/compare/v0.2.6...v0.2.7) (2026-04-14)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/skevetter/devpod to v0.22.0 ([#90](https://github.com/skevetter/devpod-provider-gcloud/issues/90)) ([0a7c282](https://github.com/skevetter/devpod-provider-gcloud/commit/0a7c28262f1294c181786151a5331d891dfda881))
+
 ## [0.2.6](https://github.com/skevetter/devpod-provider-gcloud/compare/v0.2.5...v0.2.6) (2026-04-14)
 
 
