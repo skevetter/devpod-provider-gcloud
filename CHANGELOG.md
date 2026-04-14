@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/skevetter/devpod-provider-gcloud/compare/v0.2.4...v0.2.5) (2026-04-14)
+
+
+### Bug Fixes
+
+* **deps:** update module cloud.google.com/go/compute to v1.60.0 ([#86](https://github.com/skevetter/devpod-provider-gcloud/issues/86)) ([cba7db0](https://github.com/skevetter/devpod-provider-gcloud/commit/cba7db0e06130cab82a9d955faf40652d7cc153c))
+
 ## [0.2.4](https://github.com/skevetter/devpod-provider-gcloud/compare/v0.2.3...v0.2.4) (2026-04-13)
 
 
