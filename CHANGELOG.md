@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.9](https://github.com/skevetter/devpod-provider-gcloud/compare/v0.2.8...v0.2.9) (2026-04-14)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/googleapis/gax-go/v2 to v2.22.0 ([#94](https://github.com/skevetter/devpod-provider-gcloud/issues/94)) ([5566139](https://github.com/skevetter/devpod-provider-gcloud/commit/556613916e6a5158876c992d750d245dde7cc8f6))
+
 ## [0.2.8](https://github.com/skevetter/devpod-provider-gcloud/compare/v0.2.7...v0.2.8) (2026-04-14)
 
 
