@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.11](https://github.com/skevetter/devpod-provider-gcloud/compare/v0.2.10...v0.2.11) (2026-04-30)
+
+
+### Bug Fixes
+
+* **deps:** update module google.golang.org/api to v0.277.0 ([#99](https://github.com/skevetter/devpod-provider-gcloud/issues/99)) ([59ff8c0](https://github.com/skevetter/devpod-provider-gcloud/commit/59ff8c0a098c2616928301e4fc15248a0f7ba792))
+
 ## [0.2.10](https://github.com/skevetter/devpod-provider-gcloud/compare/v0.2.9...v0.2.10) (2026-04-15)
 
 
