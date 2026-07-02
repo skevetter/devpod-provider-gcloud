@@ -12,6 +12,7 @@ import (
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/googleapis/gax-go/v2/apierror"
+	"github.com/skevetter/devpod-provider-gcloud/pkg/options"
 	"github.com/skevetter/devpod/pkg/client"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -32,7 +33,7 @@ func NewClient(
 	project, zone string,
 	opts ...option.ClientOption,
 ) (*Client, error) {
-	err := SetupEnvJson(ctx)
+	err := SetupEnvJson()
 	if err != nil {
 		return nil, err
 	}
@@ -49,35 +50,48 @@ func NewClient(
 	}, nil
 }
 
-func SetupEnvJson(ctx context.Context) error {
-	gcloudKeyFile := os.Getenv("DEVPOD_PROVIDER_GCLOUD_KEY_FILE")
+func SetupEnvJson() error {
+	gcloudKeyFile := options.GetEnv("KEY_FILE")
+
+	if gcloudKeyFile == "" {
+		gcloudKey := options.GetEnv("KEY")
+		if gcloudKey == "" {
+			gcloudKey = os.Getenv("GCLOUD_JSON_AUTH")
+		}
+
+		var err error
+		if gcloudKey != "" {
+			gcloudKeyFile, err = writeKey(gcloudKey)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	if gcloudKeyFile != "" {
 		return os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", gcloudKeyFile)
 	}
 
-	gcloudKey := os.Getenv("DEVPOD_PROVIDER_GCLOUD_KEY")
-	if gcloudKey == "" {
-		gcloudKey = os.Getenv("GCLOUD_JSON_AUTH")
-	}
-	if gcloudKey == "" {
-		return nil
-	}
-
-	return writeKeyFile(gcloudKey)
+	return nil
 }
 
-func writeKeyFile(gcloudKey string) error {
+func writeKey(gcloudKey string) (string, error) {
 	exePath, err := os.Executable()
 	if err != nil {
-		return err
+		return "", err
 	}
-	destination := filepath.Join(filepath.Dir(exePath), "gcloud_auth.json")
+	gcloudKeyFile := filepath.Join(filepath.Dir(exePath), "gcloud_auth.json")
 
-	if err := os.WriteFile(destination, []byte(gcloudKey), 0o600); err != nil { // #nosec G703
-		return err
+	err = os.WriteFile(
+		gcloudKeyFile,
+		[]byte(gcloudKey),
+		0o600,
+	) // #nosec G703
+	if err != nil {
+		return "", err
 	}
 
-	return os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", destination)
+	return gcloudKeyFile, err
 }
 
 func DefaultTokenSource(ctx context.Context) (oauth2.TokenSource, error) {
@@ -99,7 +113,7 @@ func ParseToken(tok string) (*oauth2.Token, error) {
 }
 
 func GetToken(ctx context.Context) ([]byte, error) {
-	err := SetupEnvJson(ctx)
+	err := SetupEnvJson()
 	if err != nil {
 		return nil, err
 	}
